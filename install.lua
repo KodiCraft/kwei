@@ -26,39 +26,25 @@ function printWarning(text)
   term.setTextColor(colors.white)
 end
 
-function progress(percent)
-  term.setTextColor(colors.yellow)
-  write("[" .. string.rep("=", math.floor(percent / 10)) .. string.rep(" ", 10 - math.floor(percent / 10)) .. "] " .. percent .. "%")
-  term.setTextColor(colors.white)
-end
-
 function download(url, dest)
   -- download a file from a url to a destination
-  -- print out a progress bar as the download is happening
-  -- print any errors that occur
-  request = http.get(url)
   printInfo("Downloading " .. url)
-  function downloadProgress()
-    local percent = math.floor(request.getResponseCode() / request.getResponseHeaders()["Content-Length"] * 100)
-    progress(percent)
-  end
-  local timer = os.startTimer(0.1)
-  while true do
-    local event, param = os.pullEvent()
-    if event == "timer" and param == timer then
-      downloadProgress()
-      timer = os.startTimer(0.1)
-    elseif event == "http_success" and param == request then
-      break
-    elseif event == "http_failure" and param == request then
-      printError("Could not download " .. url .. ": " .. request.getResponseCode())
-      return false
-    end
+  local response = http.get(url)
+  if response then
+    local file = fs.open(dest, "w")
+    file.write(response.readAll())
+    file.close()
+    response.close()
+    printSuccess("Downloaded " .. url)
+    return true
+  else
+    printError("Could not download " .. url)
+    return false
   end
 end
 
 -- constants
-local pkgRoot = "https://raw.githubusercontent.com/KodiCraft/kwei/main/pkg/"
+local pkgRoot = "https://raw.githubusercontent.com/KodiCraft/kwei/main/pkg"
 
 
 -- check if we have access to github
@@ -78,11 +64,72 @@ if not fs.exists("/tmp") then
   fs.makeDir("/tmp")
 end
 
-local files = {"kwei.lua"}
+-- create the shallow file system layout
+-- it should look like this:
+-- / (root)
+--   /tmp
+--   /etc
+--   /usr
+--     /bin
+--     /lib
+--   /var
+--     /log
+--     /run
+--     /kwei
+--       /containers
+--       /images
+--       /volumes
 
--- download files
+-- create the root directories
+local rootDirs = {"/etc", "/usr", "/var"}
+for _, dir in ipairs(rootDirs) do
+  if not fs.exists(dir) then
+    fs.makeDir(dir)
+  end
+end
+
+-- create the /usr subdirectories
+local usrDirs = {"/usr/bin", "/usr/lib"}
+for _, dir in ipairs(usrDirs) do
+  if not fs.exists(dir) then
+    fs.makeDir(dir)
+  end
+end
+
+-- create the /var subdirectories
+local varDirs = {"/var/log", "/var/run", "/var/kwei"}
+for _, dir in ipairs(varDirs) do
+  if not fs.exists(dir) then
+    fs.makeDir(dir)
+  end
+end
+
+-- create the /var/kwei subdirectories
+local kweiDirs = {"/var/kwei/containers", "/var/kwei/images", "/var/kwei/volumes"}
+for _, dir in ipairs(kweiDirs) do
+  if not fs.exists(dir) then
+    fs.makeDir(dir)
+  end
+end
+
+local files = {"/usr/bin/kwei.lua"}
+
+-- download the files
 for _, file in ipairs(files) do
-  printInfo("Downloading " .. file)
-  download(pkgRoot .. file, "/tmp/" .. file)
-  printSuccess("Downloaded " .. file)
+  local url = pkgRoot .. file
+  local dest = "/tmp" .. file
+  if not download(url, dest) then
+    printError("Could not install kwei: could not download " .. url)
+    return
+  end
+end
+
+-- move the files to their final destination
+for _, file in ipairs(files) do
+  local dest = file
+  local src = "/tmp" .. file
+
+  fs.copy(src, dest)
+  fs.delete(src)
+  printSuccess("Installed " .. file)
 end
