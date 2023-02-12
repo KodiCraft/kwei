@@ -30,6 +30,8 @@ function download(url, dest)
   -- download a file from a url to a destination
   printInfo("Downloading " .. url)
   local response = http.get(url)
+  printInfo("Got response: " .. response.getResponseCode())
+  -- printInfo("Filesize: " .. response.getResponseHeaders()["Content-Length"] .. " bytes")
   if response then
     local file = fs.open(dest, "w")
     file.write(response.readAll())
@@ -54,7 +56,7 @@ if not http.checkURL("https://github.com") then
 end
 
 -- check if we have access to the kwei repo
-if not http.checkURL(pkgRoot .. "kwei.lua") then
+if not http.checkURL(pkgRoot .. "/kwei.lua") then
   printError("Could not install kwei: no access to kwei repo")
   return
 end
@@ -141,8 +143,3 @@ for _, setting in ipairs(kweisettings) do
   settings.define(setting.key, {description = setting.description, type = setting.type, default = setting.default})
 end
 settings.save()
-
--- add /usr/lib to the LUA_PATH
--- we do this by injecting in the /startup file
-local handle = fs.open("/startup", "a")
-handle.writeLine("package.path = package.path .. \";/usr/lib/?.lua\"")
