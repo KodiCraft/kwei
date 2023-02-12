@@ -10,3 +10,5 @@ local args = {...}
 log = logger.Logger:new()
 
 log:info("kwei is starting")
+
+log:close()
