@@ -30,9 +30,8 @@ function download(url, dest)
   -- download a file from a url to a destination
   printInfo("Downloading " .. url)
   local response = http.get(url)
-  printInfo("Got response: " .. response.getResponseCode())
-  -- printInfo("Filesize: " .. response.getResponseHeaders()["Content-Length"] .. " bytes")
   if response then
+    printInfo("Got response: " .. response.getResponseCode())
     local file = fs.open(dest, "w")
     file.write(response.readAll())
     file.close()
@@ -103,7 +102,11 @@ for _, dir in ipairs(varDirs) do
   end
 end
 
-local files = {"/usr/bin/kwei.lua", "/usr/lib/k-log.lua"}
+local files = {
+  "/usr/bin/kwei.lua",
+  "/usr/lib/k-log.lua",
+  "/usr/lib/k-crypto.lua",
+}
 
 -- check if any of the files already exist
 for _, file in ipairs(files) do
