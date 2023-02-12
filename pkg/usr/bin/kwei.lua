@@ -34,7 +34,7 @@ end
 
 local passwdhandle = fs.open(HOME .. "/passwd", "r")
 if passwdhandle == nil then
-  printError("No password set, using kwei is currently dangerous")
+  printError("No password set, setting it to empty string ('')")
   PASSWORD_HASH = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" -- sha256 of empty string
 else
   PASSWORD_HASH = passwdhandle.readLine()

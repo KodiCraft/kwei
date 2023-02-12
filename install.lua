@@ -142,6 +142,8 @@ if not path:find("/usr/bin") then
   shell.setPath(path .. ":/usr/bin")
 end
 
+printSuccess("Added /usr/bin to PATH")
+
 -- define default settings
 local kweisettings = {
   {key = "kwei.log.level", description = "Log level for kwei, either 'info', 'warn' or 'error'", type = "string", default = "info"},
@@ -153,4 +155,8 @@ local kweisettings = {
 for _, setting in ipairs(kweisettings) do
   settings.define(setting.key, {description = setting.description, type = setting.type, default = setting.default})
 end
+printSuccess("Setup initial settings for kwei")
+
+printSuccess("Installed kwei")
+
 settings.save()
