@@ -15,7 +15,7 @@ function usage()
   print("Commands:")
   print("  help - show this help message")
   print("  passwd - set the admin password")
-  print("  create <name> - create a new container")
+  print("  create <name> [image] - create a new container from an image")
   print("  run <container> <executable> [args] - run an executable in a container")
   print("  shell <container> - open a shell in a container")
   print("  list - list all containers")
@@ -79,6 +79,34 @@ function passwd()
   return
 end
 
+function create(name, image)
+
+  if image ~= nil then
+    printError("Image support is not yet implemented! This feature will be added in a future release.")
+  end
+
+  -- check if the container already exists
+  log:info("Attempting to create container " .. name)
+  if fs.exists(HOME .. "/containers/" .. name) then
+    printError("Container " .. name .. " already exists")
+    log:warn("Container " .. name .. " already exists")
+    return
+  end
+
+  -- create folder for container
+  local containerhome = HOME .. "/containers/" .. name
+  fs.makeDir(containerhome)
+  fs.makeDir(containerhome .. "/fs")
+
+  -- create container basic configuration
+  local config = {}
+  config.name = name
+  config.image = "std@kwei"
+  config.overlays = {}
+  config.permissions = {}
+  config.
+end
+
 local cmds = {
     {name = "help", func = usage},
     {name = "passwd", func = passwd},
@@ -99,6 +127,7 @@ end
 for i = 1, #cmds do
   if cmds[i].name == cmd then
     cmds[i].func(unpack(cmdargs))
+    log:close()
     return
   end
 end
