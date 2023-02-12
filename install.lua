@@ -105,6 +105,14 @@ end
 
 local files = {"/usr/bin/kwei.lua", "/usr/lib/k-log.lua"}
 
+-- check if any of the files already exist
+for _, file in ipairs(files) do
+  if fs.exists(file) then
+    printWarning("File " .. file .. " already exists, deleting")
+    fs.delete(file)
+  end
+end
+
 -- download the files
 for _, file in ipairs(files) do
   local url = pkgRoot .. file
