@@ -127,9 +127,6 @@ end
 for i = 1, #cmds do
   if cmds[i].name == cmd then
     cmds[i].func(unpack(cmdargs))
-    log:close()
     return
   end
 end
-
-log:close()
