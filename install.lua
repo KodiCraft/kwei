@@ -76,9 +76,6 @@ end
 --     /log
 --     /run
 --     /kwei
---       /containers
---       /images
---       /volumes
 
 -- create the root directories
 local rootDirs = {"/etc", "/usr", "/var"}
@@ -104,15 +101,7 @@ for _, dir in ipairs(varDirs) do
   end
 end
 
--- create the /var/kwei subdirectories
-local kweiDirs = {"/var/kwei/containers", "/var/kwei/images", "/var/kwei/volumes"}
-for _, dir in ipairs(kweiDirs) do
-  if not fs.exists(dir) then
-    fs.makeDir(dir)
-  end
-end
-
-local files = {"/usr/bin/kwei.lua"}
+local files = {"/usr/bin/kwei.lua", "/usr/lib/k-log.lua"}
 
 -- download the files
 for _, file in ipairs(files) do
@@ -133,3 +122,27 @@ for _, file in ipairs(files) do
   fs.delete(src)
   printSuccess("Installed " .. file)
 end
+
+-- add /usr/bin to the PATH
+local path = shell.path()
+if not path:find("/usr/bin") then
+  shell.setPath(path .. ":/usr/bin")
+end
+
+-- define default settings
+local kweisettings = {
+  {key = "kwei.log.level", description = "Log level for kwei, either 'info', 'warn' or 'error'", type = "string", default = "info"},
+  {key = "kwei.log.file", description = "Log file for kwei", type = "string", default = "/var/log/kwei.log"},
+  {key = "kwei.path.home", description = "Home directory for kwei and its files", type = "string", default = "/var/kwei"},
+  {key = "kwei.path.dl", description = "Temporary directory for downloads", type = "string", default = "/tmp"},
+}
+
+for _, setting in ipairs(kweisettings) do
+  settings.define(setting.key, {description = setting.description, type = setting.type, default = setting.default})
+end
+settings.save()
+
+-- add /usr/lib to the LUA_PATH
+-- we do this by injecting in the /startup file
+local handle = fs.open("/startup", "a")
+handle.writeLine("package.path = package.path .. \";/usr/lib/?.lua\"")
