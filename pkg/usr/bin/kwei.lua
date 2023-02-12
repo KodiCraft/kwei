@@ -10,8 +10,6 @@ local args = {...}
 
 log = logger.Logger:new()
 
-log:info("kwei is starting!")
-
 function usage()
   print("Usage: kwei <command> [options]")
   print("Commands:")
@@ -50,12 +48,7 @@ function verify_password(input)
     end
 end
 
-function passwd(password)
-  if password == nil then
-    print("Usage: kwei passwd <password>")
-    return
-  end
-  
+function passwd()
   log:info("Attempting password change")
 
   print("Enter current password: ")
@@ -77,11 +70,11 @@ function passwd(password)
         return
   end
 
-  print("Changing password")
   local passhash = crypto.sha256(newpass)
   local passhandle = fs.open(HOME .. "/passwd", "w")
   passhandle.writeLine(passhash)
   passhandle.close()
+  print("Password updated.")
   log:info("Password changed, sha256 hash: " .. passhash)
   return
 end
