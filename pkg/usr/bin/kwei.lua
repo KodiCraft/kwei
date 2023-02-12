@@ -10,6 +10,30 @@ local args = {...}
 
 log = logger.Logger:new()
 
+function printError(text)
+  term.setTextColor(colors.red)
+  print(text)
+  term.setTextColor(colors.white)
+end
+
+function printSuccess(text)
+  term.setTextColor(colors.green)
+  print(text)
+  term.setTextColor(colors.white)
+end
+
+function printInfo(text)
+  term.setTextColor(colors.yellow)
+  print(text)
+  term.setTextColor(colors.white)
+end
+
+function printWarning(text)
+  term.setTextColor(colors.orange)
+  print(text)
+  term.setTextColor(colors.white)
+end
+
 function usage()
   print("Usage: kwei <command> [options]")
   print("Commands:")
@@ -81,12 +105,18 @@ end
 
 function create(name, image)
 
+  log:info("Attempting to create container " .. name)
   if image ~= nil then
     printError("Image support is not yet implemented! This feature will be added in a future release.")
   end
 
+  if name == nil then
+    printError("No container name specified")
+    log:warn("No container name specified")
+    return
+  end
+
   -- check if the container already exists
-  log:info("Attempting to create container " .. name)
   if fs.exists(HOME .. "/containers/" .. name) then
     printError("Container " .. name .. " already exists")
     log:warn("Container " .. name .. " already exists")
@@ -104,13 +134,53 @@ function create(name, image)
   config.image = "std@kwei"
   config.overlays = {}
   config.permissions = {}
-  config.
+  config.peripherals = {}
+  config.mounts = {}
+
+  -- write config to file
+  local confighandle = fs.open(containerhome .. "/config", "w")
+  confighandle.write(textutils.serialize(config))
+  confighandle.close()
+
+  -- create container filesystem
+  local fsdir = containerhome .. "/fs"
+  fs.makeDir(fsdir .. "/rom")
+  -- copy rom files from either the system rom or the kwei patched rom
+  -- get a recursive file list of the rom directory
+  local romfiles = {}
+  local list = fs.list("/rom")
+  for i = 1, #list do
+    local file = list[i]
+    if fs.isDir("/rom/" .. file) then
+      local subfiles = fs.list("/rom/" .. file)
+      for j = 1, #subfiles do
+        table.insert(romfiles, file .. "/" .. subfiles[j])
+      end
+    else
+      table.insert(romfiles, file)
+    end
+  end
+
+  for i = 1, #romfiles do
+    local file = romfiles[i]
+    -- check if the file exists in the /usr/lib/kwei-patched-rom directory
+    if fs.exists("/usr/lib/kwei-patched-rom/" .. file) then
+      -- copy the patched rom file
+      fs.copy("/usr/lib/kwei-patched-rom/" .. file, fsdir .. "/rom/" .. file)
+    else
+      -- copy the original rom file
+      fs.copy("/rom/" .. file, fsdir .. "/rom/" .. file)
+    end
+  end
+
+  printSuccess("Container " .. name .. " created")
+  log:info("Container " .. name .. " created")
 end
 
 local cmds = {
     {name = "help", func = usage},
     {name = "passwd", func = passwd},
-
+    {name = "create", func = create}
 }
 
 if #args == 0 then
