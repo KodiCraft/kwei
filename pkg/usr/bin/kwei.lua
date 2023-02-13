@@ -206,9 +206,7 @@ local function shellInContainer(name)
   local oldglobals = _G
   
   local globals = {}
-  for k, v in pairs(_G) do
-    globals[k] = v
-  end
+  globals = deepcopy(oldglobals)
   globals._G = globals
   globals._CC_CONTAINER_HOME = _CC_CONTAINER_HOME
   globals._PARENT_LOGGER = log
@@ -225,7 +223,7 @@ local function shellInContainer(name)
   -- destroy the container's global
   globals = nil
   _CC_CONTAINER_HOME = nil
-  _G = oldglobals
+  _G = deepcopy(oldglobals)
   printSuccess("Container " .. name .. " exited")
   log:info("Container " .. name .. " exited")
   return
