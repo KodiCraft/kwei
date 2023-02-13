@@ -203,6 +203,8 @@ local function shellInContainer(name)
   _CC_CONTAINER_HOME = HOME .. "/containers/" .. name .. "/fs"
   log:info("Container home set to " .. _CC_CONTAINER_HOME)
   -- Create a new global table for the container, it should be almost the same as the current global table, except for all the kwei functions
+  local oldglobals = _G
+  
   local globals = {}
   for k, v in pairs(_G) do
     globals[k] = v
@@ -223,7 +225,8 @@ local function shellInContainer(name)
   -- destroy the container's global
   globals = nil
   _CC_CONTAINER_HOME = nil
-
+  _G = oldglobals
+  printSuccess("Container " .. name .. " exited")
   log:info("Container " .. name .. " exited")
   return
 end
