@@ -51,15 +51,9 @@ local fsmt = {
         if newfs[k] ~= nil then
             return newfs[k]
         else
-            -- check if the object is a function, if it is, wrap it in a function which will call the function with the container home prepended
-            if type(oldfs[k]) == "function" then
-                return function(...)
-                    return oldfs[k](getContainerPaths(...))
-                end
-            else
-                return oldfs[k]
+            return function(...)
+                return oldfs[k](getContainerPaths(...))
             end
-        end
     end,
     __newindex = function(t, k, v)
         error("Attempted to set new value for " .. k .. " in fs API")
@@ -130,6 +124,8 @@ end
 function newfs.youAreInAContainer()
     return true
 end
+
+fs = fs
 
 -- Make _CC_CONTAINER_HOME a read-only global variable
 _CC_CONTAINER_HOME = _CC_CONTAINER_HOME
