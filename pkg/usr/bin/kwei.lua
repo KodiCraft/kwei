@@ -181,6 +181,12 @@ local function create(name, image)
 end
 
 local function shellInContainer(name)
+  if name == nil then
+    printError("No container name specified")
+    log:warn("No container name specified")
+    return
+  end
+
   log:info("Attempting to open shell in container " .. name)
   -- check if the container exists
   if not fs.exists(HOME .. "/containers/" .. name) then
