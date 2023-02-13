@@ -11,6 +11,12 @@ if _CC_CONTAINER_HOME == nil then
     error("Critical error: _CC_CONTAINER_HOME is not set, cannot continue!")
 end
 
+if _PARENT_LOGGER == nil then
+    error("Critical error: _PARENT_LOGGER is not set, cannot continue!")
+end
+
+_PARENT_LOGGER:info("Running from container home " .. _CC_CONTAINER_HOME)
+
 local oldfs = fs
 
 -- Create the new fs API which will replace the old one
@@ -23,17 +29,19 @@ local function getContainerPath(path)
     -- Prepend the container home to the path
     path = _CC_CONTAINER_HOME .. "/" .. path
     -- Resolve the path, removing any '..' or '.' nonsense
-    local resolved = oldfs.combine("", path)
+    local resolved = "/" .. oldfs.combine("", path)
     -- Check that the path is in the container home
     if not string.find(resolved, "^" .. _CC_CONTAINER_HOME) then
         error("Attempted to access path outside of container home: " .. resolved .. " (container home: " .. _CC_CONTAINER_HOME .. ")")
     end
     -- Return the resolved path
+    _PARENT_LOGGER:info("Resolved path " .. path .. " to " .. resolved)
     return resolved
 end
 
-function fs.combine(basepath, path)
-    return oldfs.combine(getContainerPath(basepath), getContainerPath(path))
+function fs.combine(...)
+    -- In this one we need to pretend we're in the root filesystem
+    return oldfs.combine(...)
 end
 function fs.copy(frompath, topath)
     return oldfs.copy(getContainerPath(frompath), getContainerPath(topath))
@@ -870,6 +878,9 @@ if fs.exists(".settings") then
     settings.load(".settings")
 end
 
+-- Don't allow the user to shutdown the computer from inside a container
+function os.shutdown() end
+
 --#Run the shell
 local ok, err = pcall(parallel.waitForAny,
     function()
@@ -896,5 +907,4 @@ if not ok then
     end)
 end
 
---#End
-os.shutdown()
+-- Do not shutdown ever

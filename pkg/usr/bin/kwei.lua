@@ -200,15 +200,13 @@ local function shellInContainer(name)
   -- TODO: Handle configuration and permissions
 
   -- create the container's required global:
-  _CC_CONTAINER_HOME = HOME .. "/containers/" .. name
+  _CC_CONTAINER_HOME = HOME .. "/containers/" .. name .. "/fs"
   log:info("Container home set to " .. _CC_CONTAINER_HOME)
   -- Create a new global table for the container, it should be almost the same as the current global table, except for all the kwei functions
   local globals = {}
-  for k, v in pairs(_G) do
-    globals[k] = v
-  end
   globals._G = globals
-  globals._CC_CONTAINER_HOME = HOME .. "/containers/" .. name
+  globals._CC_CONTAINER_HOME = _CC_CONTAINER_HOME
+  globals._PARENT_LOGGER = log
 
 
   -- start the container's bios
