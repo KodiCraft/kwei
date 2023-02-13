@@ -20,6 +20,8 @@ local oldfs = fs
 local fs = {}
 
 local function getContainerPath(path)
+    -- Prepend the container home to the path
+    path = _CC_CONTAINER_HOME .. "/" .. path
     -- Resolve the path, removing any '..' or '.' nonsense
     local resolved = oldfs.combine("", path)
     -- Check that the path is in the container home
