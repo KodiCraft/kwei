@@ -102,14 +102,18 @@ for _, dir in ipairs(varDirs) do
   end
 end
 
-local files = {
-  "/usr/bin/kwei.lua",
-  "/usr/lib/k-log.lua",
-  "/usr/lib/k-crypto.lua",
-  "/usr/lib/kwei-patched-bios.lua",
-  "/usr/lib/kwei-patched-rom/motd.txt",
-
-}
+-- find the list of files at the root of the package
+local files = {}
+local response = http.get(pkgRoot .. "/filelist.txt")
+if response then
+  for line in response.readLine do
+    table.insert(files, line)
+  end
+  response.close()
+else
+  printError("Could not install kwei: could not get file list")
+  return
+end
 
 -- check if any of the files already exist
 for _, file in ipairs(files) do
