@@ -174,7 +174,7 @@ local function create(name, image)
   end
 
   -- copy the patched bios to the container's filesystem
-  fs.copy("/usr/lib/kwei-patched-rom/bios.lua", fsdir .. "/rom/bios.lua")
+  fs.copy("/usr/lib/kwei-patched-bios.lua", fsdir .. "/rom/bios.lua")
 
   printSuccess("Container " .. name .. " created")
   log:info("Container " .. name .. " created")
