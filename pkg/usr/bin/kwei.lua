@@ -218,6 +218,10 @@ local function shellInContainer(name)
   if not result then
     printError("Container " .. name .. " exited with error: ", err)
     log:error("Container " .. name .. " exited with error: " .. err)
+    for k, v in pairs(oldglobals) do
+      _G[k] = v
+    end
+    return
   end
   -- when we return here, the container has exited
   -- rebuild the global table
