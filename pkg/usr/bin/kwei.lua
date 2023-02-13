@@ -214,10 +214,10 @@ local function shellInContainer(name)
   bios.close()
   log:info("Loaded bios.lua from container " .. name)
   local biosfunc = load(bioscode, "bios.lua", "t", globals)
-  if not pcall(biosfunc) then
-    printError("Exiting container " .. name .. " due to error in bios.lua")
-    log:warn("Error running bios.lua in container " .. name)
-    return
+  local result, err = pcall(biosfunc)
+  if not result then
+    printError("Container " .. name .. " exited with error: ", err)
+    log:error("Container " .. name .. " exited with error: " .. err)
   end
   -- when we return here, the container has exited
   -- rebuild the global table
