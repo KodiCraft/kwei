@@ -131,8 +131,6 @@ function newfs.youAreInAContainer()
     return true
 end
 
--- Replace the old fs API with the new one
-fs = newfs
 -- Make _CC_CONTAINER_HOME a read-only global variable
 _CC_CONTAINER_HOME = _CC_CONTAINER_HOME
 
