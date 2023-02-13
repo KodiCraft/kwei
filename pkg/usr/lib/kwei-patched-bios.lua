@@ -114,7 +114,7 @@ function newfs.isDriveRoot(path)
         return true
     end
     return oldfs.isDriveRoot(getContainerPath(path))
-
+end
 -- This one is special
 -- We need to pretend we're in the root file system on the output
 function newfs.complete(...)
