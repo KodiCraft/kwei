@@ -153,7 +153,7 @@ printSuccess("Added /usr/bin to PATH")
 
 -- define default settings
 local kweisettings = {
-  {key = "kwei.log.level", description = "Log level for kwei, either 'info', 'warn' or 'error'", type = "string", default = "info"},
+  {key = "kwei.log.level", description = "Log level for kwei, either 'info', 'warn' or 'error'", type = "string", default = "warn"},
   {key = "kwei.log.file", description = "Log file for kwei", type = "string", default = "/var/log/kwei.log"},
   {key = "kwei.path.home", description = "Home directory for kwei and its files", type = "string", default = "/var/kwei"},
   {key = "kwei.path.dl", description = "Temporary directory for downloads", type = "string", default = "/tmp"},
