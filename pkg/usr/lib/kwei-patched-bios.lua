@@ -26,7 +26,7 @@ local function getContainerPath(path)
     local resolved = oldfs.combine("", path)
     -- Check that the path is in the container home
     if not string.find(resolved, "^" .. _CC_CONTAINER_HOME) then
-        error("Attempted to access path outside of container home: " .. resolved)
+        error("Attempted to access path outside of container home: " .. resolved .. " (container home: " .. _CC_CONTAINER_HOME .. ")")
     end
     -- Return the resolved path
     return resolved
