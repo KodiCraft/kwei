@@ -34,21 +34,6 @@ local function printWarning(text)
   term.setTextColor(colors.white)
 end
 
-function deepcopy(orig)
-  local orig_type = type(orig)
-  local copy
-  if orig_type == 'table' then
-      copy = {}
-      for orig_key, orig_value in next, orig, nil do
-          copy[deepcopy(orig_key)] = deepcopy(orig_value)
-      end
-      setmetatable(copy, deepcopy(getmetatable(orig)))
-  else -- number, string, boolean, etc
-      copy = orig
-  end
-  return copy
-end
-
 local function usage()
   print("Usage: kwei <command> [options]")
   print("Commands:")
@@ -221,7 +206,9 @@ local function shellInContainer(name)
   local oldglobals = _G
   
   local globals = {}
-  globals = deepcopy(oldglobals)
+  for k, v in pairs(oldglobals) do
+    globals[k] = v
+  end
   globals._G = globals
   globals._CC_CONTAINER_HOME = _CC_CONTAINER_HOME
   globals._PARENT_LOGGER = log
@@ -238,7 +225,7 @@ local function shellInContainer(name)
   -- destroy the container's global
   globals = nil
   _CC_CONTAINER_HOME = nil
-  _G = deepcopy(oldglobals)
+  _G = oldglobals
   printSuccess("Container " .. name .. " exited")
   log:info("Container " .. name .. " exited")
   return
