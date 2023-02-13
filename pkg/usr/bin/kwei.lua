@@ -167,19 +167,6 @@ local function create(name, image)
   -- create rom directory for directory list to work
   fs.makeDir(fsdir .. "/rom")
   
-
-  for i = 1, #romfiles do
-    local file = romfiles[i]
-    -- check if the file exists in the /usr/lib/kwei-patched-rom directory
-    if fs.exists("/usr/lib/kwei-patched-rom/" .. file) then
-      -- copy the patched rom file
-      fs.copy("/usr/lib/kwei-patched-rom/" .. file, fsdir .. "/rom/" .. file)
-    else
-      -- copy the original rom file
-      fs.copy("/rom/" .. file, fsdir .. "/rom/" .. file)
-    end
-  end
-
   -- copy the patched bios to the container's filesystem
   fs.copy("/usr/lib/kwei-patched-bios.lua", fsdir .. "/bios.lua")
 

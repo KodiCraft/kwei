@@ -929,7 +929,6 @@ local ok, err = pcall(parallel.waitForAny,
             sShell = "rom/programs/shell.lua"
         end
         os.run({}, sShell)
-        os.run({}, "rom/programs/shutdown.lua")
     end,
     rednet.run
 )
