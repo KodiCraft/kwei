@@ -201,7 +201,7 @@ local function shellInContainer(name)
 
   -- create the container's required global:
   _CC_CONTAINER_HOME = HOME .. "/containers/" .. name
-
+  log:info("Container home set to " .. _CC_CONTAINER_HOME)
   -- Create a new global table for the container, it should be almost the same as the current global table, except for all the kwei functions
   local globals = {}
   for k, v in pairs(_G) do
@@ -215,6 +215,7 @@ local function shellInContainer(name)
   local bios = fs.open(HOME .. "/containers/" .. name .. "/fs/bios.lua", "r")
   local bioscode = bios.readAll()
   bios.close()
+  log:info("Loaded bios.lua from container " .. name)
   local biosfunc = load(bioscode, "bios.lua", "t", globals)
   biosfunc()
 
