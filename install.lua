@@ -66,20 +66,8 @@ if not fs.exists("/tmp") then
 end
 
 -- create the shallow file system layout
--- it should look like this:
--- / (root)
---   /tmp
---   /etc
---   /usr
---     /bin
---     /lib
---   /var
---     /log
---     /run
---     /kwei
-
 -- create the root directories
-local rootDirs = {"/etc", "/usr", "/var"}
+local rootDirs = {"/usr", "/var"}
 for _, dir in ipairs(rootDirs) do
   if not fs.exists(dir) then
     fs.makeDir(dir)
@@ -95,7 +83,7 @@ for _, dir in ipairs(usrDirs) do
 end
 
 -- create the /var subdirectories
-local varDirs = {"/var/log", "/var/run", "/var/kwei"}
+local varDirs = {"/var/log", "/var/kwei"}
 for _, dir in ipairs(varDirs) do
   if not fs.exists(dir) then
     fs.makeDir(dir)
