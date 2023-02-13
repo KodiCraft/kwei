@@ -213,7 +213,12 @@ local function shellInContainer(name)
   local bioscode = bios.readAll()
   bios.close()
   log:info("Loaded bios.lua from container " .. name)
-  local biosfunc = load(bioscode, "bios.lua", "t", globals)
+  local biosfunc, comperror = load(bioscode, "bios.lua", "t", globals)
+  if biosfunc == nil then
+    printError("A compilation error has occured in bios.lua: " .. comperror)
+    log:error("A compilation error has occured in bios.lua: " .. comperror)
+    return
+  end
   local result, err = pcall(biosfunc)
   if not result then
     printError("Container " .. name .. " exited with error: " .. err)
