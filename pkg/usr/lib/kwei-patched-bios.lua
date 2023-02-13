@@ -45,17 +45,27 @@ local oldfs = deepcopy(fs)
 fs = {}
 
 local function getContainerPath(path)
-    -- Prepend the container home to the path
-    path = _CC_CONTAINER_HOME .. "/" .. path
-    -- Resolve the path, removing any '..' or '.' nonsense
-    local resolved = "/" .. oldfs.combine("", path)
-    -- Check that the path is in the container home
-    if not string.find(resolved, "^" .. _CC_CONTAINER_HOME) then
-        error("Attempted to access path outside of container home: " .. resolved .. " (container home: " .. _CC_CONTAINER_HOME .. ")")
+    local tmp = "/" .. oldfs.combine("", path)
+    -- check if that path is in /rom
+    -- if it is, redirect it to the root /rom
+    if string.find(tmp, "^/rom") then
+        local resolved = "/rom" .. string.sub(tmp, 5)
+        _PARENT_LOGGER:info("Resolved path " .. path .. " to " .. resolved)
+        return resolved
+    else
+        -- Prepend the container home to the path
+        path = _CC_CONTAINER_HOME .. "/" .. path
+        -- Resolve the path, removing any '..' or '.' nonsense
+        local resolved = "/" .. oldfs.combine("", path)
+        -- Check that the path is in the container home
+    
+        if not string.find(resolved, "^" .. _CC_CONTAINER_HOME) then
+            error("Attempted to access path outside of container home: " .. resolved .. " (container home: " .. _CC_CONTAINER_HOME .. ")")
+        end
+        -- Return the resolved path
+        _PARENT_LOGGER:info("Resolved path " .. path .. " to " .. resolved)
+        return resolved
     end
-    -- Return the resolved path
-    _PARENT_LOGGER:info("Resolved path " .. path .. " to " .. resolved)
-    return resolved
 end
 
 function fs.combine(...)

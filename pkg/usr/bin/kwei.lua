@@ -163,22 +163,10 @@ local function create(name, image)
 
   -- create container filesystem
   local fsdir = containerhome .. "/fs"
+  
+  -- create rom directory for directory list to work
   fs.makeDir(fsdir .. "/rom")
-  -- copy rom files from either the system rom or the kwei patched rom
-  -- get a recursive file list of the rom directory
-  local romfiles = {}
-  local list = fs.list("/rom")
-  for i = 1, #list do
-    local file = list[i]
-    if fs.isDir("/rom/" .. file) then
-      local subfiles = fs.list("/rom/" .. file)
-      for j = 1, #subfiles do
-        table.insert(romfiles, file .. "/" .. subfiles[j])
-      end
-    else
-      table.insert(romfiles, file)
-    end
-  end
+  
 
   for i = 1, #romfiles do
     local file = romfiles[i]
