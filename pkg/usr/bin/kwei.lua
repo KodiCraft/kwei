@@ -248,3 +248,7 @@ for i = 1, #cmds do
     return
   end
 end
+
+printError("Unknown command " .. cmd)
+usage()
+return
