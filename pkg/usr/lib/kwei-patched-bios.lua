@@ -121,6 +121,7 @@ end
 function fs.attributes(path)
     return oldfs.attributes(getContainerPath(path))
 end
+
 -- This one is special
 -- We need to pretend we're in the root file system on the output
 function fs.complete(...)
@@ -131,6 +132,10 @@ function fs.complete(...)
         table.insert(out, string.sub(v, string.len(_CC_CONTAINER_HOME) + 2))
     end
     return out
+end
+
+function fs.youAreInAContainer()
+    return true
 end
 
 -- Replace the old fs API with the new one

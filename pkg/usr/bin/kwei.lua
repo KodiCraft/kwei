@@ -10,6 +10,28 @@ local args = {...}
 
 log = logger.Logger:new()
 
+-- Save copied tables in `copies`, indexed by original table.
+function deepcopy(orig, copies)
+  copies = copies or {}
+  local orig_type = type(orig)
+  local copy
+  if orig_type == 'table' then
+      if copies[orig] then
+          copy = copies[orig]
+      else
+          copy = {}
+          copies[orig] = copy
+          for orig_key, orig_value in next, orig, nil do
+              copy[deepcopy(orig_key, copies)] = deepcopy(orig_value, copies)
+          end
+          setmetatable(copy, deepcopy(getmetatable(orig), copies))
+      end
+  else -- number, string, boolean, etc
+      copy = orig
+  end
+  return copy
+end
+
 local function printError(text)
   term.setTextColor(colors.red)
   print(text)
@@ -202,13 +224,11 @@ local function shellInContainer(name)
   -- create the container's required global:
   _CC_CONTAINER_HOME = HOME .. "/containers/" .. name .. "/fs"
   log:info("Container home set to " .. _CC_CONTAINER_HOME)
-  -- Create a new global table for the container, it should be almost the same as the current global table, except for all the kwei functions
-  local oldglobals = _G
-  
-  local globals = {}
-  for k, v in pairs(oldglobals) do
-    globals[k] = v
-  end
+  -- Create a new global table for the container, it should have all the globals that are critical for the system
+  local copies = {}
+  local oldglobals = deepcopy(_G, copies)
+  copies = {}
+  local globals = deepcopy(_G, copies)
   globals._G = globals
   globals._CC_CONTAINER_HOME = _CC_CONTAINER_HOME
   globals._PARENT_LOGGER = log
@@ -225,10 +245,10 @@ local function shellInContainer(name)
     return
   end
   -- when we return here, the container has exited
-  -- destroy the container's global
-  globals = nil
-  _CC_CONTAINER_HOME = nil
-  _G = oldglobals
+  -- rebuild the global table
+  for k, v in pairs(oldglobals) do
+    _G[k] = v
+  end
   printSuccess("Container " .. name .. " exited")
   log:info("Container " .. name .. " exited")
   return
