@@ -60,6 +60,9 @@ local fsmt = {
                 return oldfs[k]
             end
         end
+    end,
+    __newindex = function(t, k, v)
+        error("Attempted to set new value for " .. k .. " in fs API")
     end
 }
 

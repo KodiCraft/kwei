@@ -216,7 +216,7 @@ local function shellInContainer(name)
   local biosfunc = load(bioscode, "bios.lua", "t", globals)
   local result, err = pcall(biosfunc)
   if not result then
-    printError("Container " .. name .. " exited with error: ", err)
+    printError("Container " .. name .. " exited with error: " .. err)
     log:error("Container " .. name .. " exited with error: " .. err)
     for k, v in pairs(oldglobals) do
       _G[k] = v
