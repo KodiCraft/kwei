@@ -27,6 +27,8 @@ function printWarning(text)
 end
 
 function download(url, dest)
+  -- append '?' and some random characters to the url to prevent caching
+  url = url .. "?" .. math.random(1000000000, 9999999999)
   -- download a file from a url to a destination
   printInfo("Downloading " .. url)
   local response = http.get(url)
