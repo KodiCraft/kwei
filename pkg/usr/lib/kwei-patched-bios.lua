@@ -42,29 +42,29 @@ local oldfs = deepcopy(fs)
 -- This is a very simple wrapper around the old fs API, which forces all calls to use the container home as the root
 -- Additionally, we want to completely prevent any access to the root file system, so we will raise an error if any attempt is made to do so.
 -- We do this by running a simple check to see where the path is pointing to, and if it is not in the container home, we raise an error
-fs = {}
-newfs = {}
 
--- we need to prevent access to oldfs from anything other than newfs
--- so we'll cover oldfs in a metatable that regulates access
-local oldfs_mt = {
+local newfs = {}
+
+-- we'll use a metatable around fs to wrap all functions and use newfs if they are present there
+local fsmt = {
     __index = function(t, k)
-        if newfs[k] then
+        if newfs[k] ~= nil then
             return newfs[k]
         else
-            oldfs[k]
-        end
-    end,
-    __newindex = function(t, k, v)
-        if newfs[k] then
-            newfs[k] = v
-        else
-            oldfs[k] = v
+            -- check if the object is a function, if it is, wrap it in a function which will call the function with the container home prepended
+            if type(oldfs[k]) == "function" then
+                return function(...)
+                    return oldfs[k](getContainerPaths(...))
+                end
+            else
+                return oldfs[k]
+            end
         end
     end
 }
 
-setmetatable(oldfs, oldfs_mt)
+-- set the metatable
+setmetatable(fs, fsmt)
 
 local function getContainerPath(path)
     local tmp = "/" .. oldfs.combine("", path)
@@ -90,40 +90,20 @@ local function getContainerPath(path)
     end
 end
 
+local function getContainerPaths(...)
+    -- get paths for every argument and return them as a series of arguments
+    local out = {}
+    for _, v in ipairs({...}) do
+        table.insert(out, getContainerPath(v))
+    end
+    return unpack(out)
+end
+
 function newfs.combine(...)
     -- In this one we need to pretend we're in the root filesystem
     return oldfs.combine(...)
 end
-function newfs.copy(frompath, topath)
-    return oldfs.copy(getContainerPath(frompath), getContainerPath(topath))
-end
-function newfs.delete(path)
-    return oldfs.delete(getContainerPath(path))
-end
-function newfs.exists(path)
-    return oldfs.exists(getContainerPath(path))
-end
-function newfs.find(path)
-    return oldfs.find(getContainerPath(path))
-end
-function newfs.getDir(path)
-    return oldfs.getDir(getContainerPath(path))
-end
-function newfs.isDir(path)
-    return oldfs.isDir(getContainerPath(path))
-end
-function newfs.isReadOnly(path)
-    return oldfs.isReadOnly(getContainerPath(path))
-end
-function newfs.list(path)
-    return oldfs.list(getContainerPath(path))
-end
-function newfs.makeDir(path)
-    return oldfs.makeDir(getContainerPath(path))
-end
-function newfs.move(frompath, topath)
-    return oldfs.move(getContainerPath(frompath), getContainerPath(topath))
-end
+
 function newfs.isDriveRoot(path)
     -- This one is special
     -- We want to check if the path is the root of the container home as well
@@ -131,28 +111,6 @@ function newfs.isDriveRoot(path)
         return true
     end
     return oldfs.isDriveRoot(getContainerPath(path))
-end
-function newfs.getName(path)
-    return oldfs.getName(getContainerPath(path))
-end
-function newfs.getSize(path)
-    return oldfs.getSize(getContainerPath(path))
-end
-function newfs.getFreeSpace(path)
-    return oldfs.getFreeSpace(getContainerPath(path))
-end
-function newfs.getDrive(path)
-    return oldfs.getDrive(getContainerPath(path))
-end
-function newfs.open(path, mode)
-    return oldfs.open(getContainerPath(path), mode)
-end
-function newfs.attributes(path)
-    return oldfs.attributes(getContainerPath(path))
-end
-function newfs.attributes(path)
-    return oldfs.attributes(getContainerPath(path))
-end
 
 -- This one is special
 -- We need to pretend we're in the root file system on the output
