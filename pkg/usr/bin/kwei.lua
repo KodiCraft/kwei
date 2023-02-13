@@ -255,8 +255,8 @@ local cmds = {
     {name = "help", func = usage},
     {name = "passwd", func = passwd},
     {name = "create", func = create},
-    {name = "shell", func = shellInContainer}
-    {name = "list", func = list}
+    {name = "shell", func = shellInContainer},
+    {name = "list", func = list},
     {name = "delete", func = delete}
 }
 
