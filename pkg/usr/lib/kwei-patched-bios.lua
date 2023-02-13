@@ -166,7 +166,7 @@ local oldfs_mt = {
 setmetatable(oldfs, oldfs_mt)
 
 -- Replace the old fs API with the new one
-fs = fs
+fs = newfs
 -- Make _CC_CONTAINER_HOME a read-only global variable
 _CC_CONTAINER_HOME = _CC_CONTAINER_HOME
 
