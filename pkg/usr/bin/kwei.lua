@@ -10,31 +10,31 @@ local args = {...}
 
 log = logger.Logger:new()
 
-function printError(text)
+local function printError(text)
   term.setTextColor(colors.red)
   print(text)
   term.setTextColor(colors.white)
 end
 
-function printSuccess(text)
+local function printSuccess(text)
   term.setTextColor(colors.green)
   print(text)
   term.setTextColor(colors.white)
 end
 
-function printInfo(text)
+local function printInfo(text)
   term.setTextColor(colors.yellow)
   print(text)
   term.setTextColor(colors.white)
 end
 
-function printWarning(text)
+local function printWarning(text)
   term.setTextColor(colors.orange)
   print(text)
   term.setTextColor(colors.white)
 end
 
-function usage()
+local function usage()
   print("Usage: kwei <command> [options]")
   print("Commands:")
   print("  help - show this help message")
@@ -63,7 +63,7 @@ else
   passwdhandle.close()
 end
 
-function verify_password(input)
+local function verify_password(input)
     local inputhash = crypto.sha256(input)
     if inputhash == PASSWORD_HASH then
         return true
@@ -72,7 +72,7 @@ function verify_password(input)
     end
 end
 
-function passwd()
+local function passwd()
   log:info("Attempting password change")
 
   print("Enter current password: ")
@@ -103,7 +103,7 @@ function passwd()
   return
 end
 
-function create(name, image)
+local function create(name, image)
 
   log:info("Attempting to create container " .. name)
   if image ~= nil then
@@ -173,14 +173,62 @@ function create(name, image)
     end
   end
 
+  -- copy the patched bios to the container's filesystem
+  fs.copy("/usr/lib/kwei-patched-rom/bios.lua", fsdir .. "/rom/bios.lua")
+
   printSuccess("Container " .. name .. " created")
   log:info("Container " .. name .. " created")
+end
+
+local function shellInContainer(name)
+  log:info("Attempting to open shell in container " .. name)
+  -- check if the container exists
+  if not fs.exists(HOME .. "/containers/" .. name) then
+    printError("Container " .. name .. " does not exist")
+    log:warn("Container " .. name .. " does not exist")
+    return
+  end
+
+  -- load the container's config
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "r")
+  local config = textutils.unserialize(confighandle.readAll())
+  confighandle.close()
+
+  -- TODO: Handle configuration and permissions
+
+  -- create the container's required global:
+  _CC_CONTAINER_HOME = HOME .. "/containers/" .. name
+
+  -- Create a new global table for the container, it should be almost the same as the current global table, except for all the kwei functions
+  local globals = {}
+  for k, v in pairs(_G) do
+    globals[k] = v
+  end
+  globals._G = globals
+  globals._CC_CONTAINER_HOME = HOME .. "/containers/" .. name
+
+
+  -- start the container's bios
+  local bios = fs.open(HOME .. "/containers/" .. name .. "/fs/rom/bios.lua", "r")
+  local bioscode = bios.readAll()
+  bios.close()
+  local biosfunc = load(bioscode, "bios.lua", "t", globals)
+  biosfunc()
+
+  -- when we return here, the container has exited
+  -- destroy the container's global
+  globals = nil
+  _CC_CONTAINER_HOME = nil
+
+  log:info("Container " .. name .. " exited")
+  return
 end
 
 local cmds = {
     {name = "help", func = usage},
     {name = "passwd", func = passwd},
-    {name = "create", func = create}
+    {name = "create", func = create},
+    {name = "shell", func = shellInContainer}
 }
 
 if #args == 0 then

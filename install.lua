@@ -106,7 +106,9 @@ local files = {
   "/usr/bin/kwei.lua",
   "/usr/lib/k-log.lua",
   "/usr/lib/k-crypto.lua",
+  "/usr/lib/kwei-patched-bios.lua",
   "/usr/lib/kwei-patched-rom/motd.txt",
+
 }
 
 -- check if any of the files already exist
