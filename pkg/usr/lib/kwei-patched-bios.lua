@@ -36,7 +36,7 @@ function deepcopy(orig)
     return copy
 end
 
-local oldfs = deepcopy(fs)
+-- local oldfs = deepcopy(fs)
 
 -- Create the new fs API which will replace the old one
 -- This is a very simple wrapper around the old fs API, which forces all calls to use the container home as the root
@@ -52,7 +52,7 @@ local fsmt = {
             return newfs[k]
         else
             return function(...)
-                return oldfs[k](getContainerPaths(...))
+                return t[k](getContainerPaths(...))
             end
         end
     end,
