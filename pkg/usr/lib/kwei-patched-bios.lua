@@ -45,6 +45,27 @@ local oldfs = deepcopy(fs)
 fs = {}
 newfs = {}
 
+-- we need to prevent access to oldfs from anything other than newfs
+-- so we'll cover oldfs in a metatable that regulates access
+local oldfs_mt = {
+    __index = function(t, k)
+        if newfs[k] then
+            return newfs[k]
+        else
+            oldfs[k]
+        end
+    end,
+    __newindex = function(t, k, v)
+        if newfs[k] then
+            newfs[k] = v
+        else
+            oldfs[k] = v
+        end
+    end
+}
+
+setmetatable(oldfs, oldfs_mt)
+
 local function getContainerPath(path)
     local tmp = "/" .. oldfs.combine("", path)
     -- check if that path is in /rom
@@ -148,22 +169,6 @@ end
 function newfs.youAreInAContainer()
     return true
 end
-
--- we need to prevent access to oldfs from anything other than newfs
--- so we'll cover oldfs in a metatable that regulates access
-local oldfs_mt = {
-    __index = function(t, k)
-        if newfs[k] then
-            return newfs[k]
-        else
-            error("Attempted to access oldfs." .. k .. " from within a container")
-        end
-    end,
-    __newindex = function(t, k, v)
-        error("Attempted to set oldfs." .. k .. " from within a container")
-    end
-}
-setmetatable(oldfs, oldfs_mt)
 
 -- Replace the old fs API with the new one
 fs = newfs
