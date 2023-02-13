@@ -215,7 +215,7 @@ local function shellInContainer(name)
 
 
   -- start the container's bios
-  local bios = fs.open(HOME .. "/containers/" .. name .. "/fs/rom/bios.lua", "r")
+  local bios = fs.open(HOME .. "/containers/" .. name .. "/fs/bios.lua", "r")
   local bioscode = bios.readAll()
   bios.close()
   local biosfunc = load(bioscode, "bios.lua", "t", globals)
