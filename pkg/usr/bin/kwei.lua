@@ -224,6 +224,7 @@ local function shellInContainer(name)
   for k, v in pairs(oldglobals) do
     _G[k] = v
   end
+  term.clear()
   printSuccess("Container " .. name .. " exited")
   log:info("Container " .. name .. " exited")
   return
