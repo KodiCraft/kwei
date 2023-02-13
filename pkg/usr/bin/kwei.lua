@@ -219,8 +219,7 @@ local function shellInContainer(name)
   bios.close()
   log:info("Loaded bios.lua from container " .. name)
   local biosfunc = load(bioscode, "bios.lua", "t", globals)
-  biosfunc()
-
+  pcall(biosfunc())
   -- when we return here, the container has exited
   -- destroy the container's global
   globals = nil

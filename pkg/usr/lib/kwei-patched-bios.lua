@@ -126,7 +126,11 @@ end
 function fs.complete(...)
     local tmp = oldfs.complete(...)
     -- Remove the container home from the start of the path
-    return string.gsub(tmp, "^" .. _CC_CONTAINER_HOME, "")
+    local out = {}
+    for _, v in ipairs(tmp) do
+        table.insert(out, string.sub(v, string.len(_CC_CONTAINER_HOME) + 2))
+    end
+    return out
 end
 
 -- Replace the old fs API with the new one

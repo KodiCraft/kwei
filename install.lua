@@ -151,6 +151,20 @@ end
 
 printSuccess("Added /usr/bin to PATH")
 
+-- add that previous segment to the startup script
+local startup = "/startup"
+if fs.exists(startup) then
+  local file = fs.open(startup, "r")
+  local contents = file.readAll()
+  file.close()
+
+  if not contents:find("shell.setPath") then
+    file = fs.open(startup, "a")
+    file.writeLine("shell.setPath(shell.path() .. \":/usr/bin\")")
+    file.close()
+  end
+end
+
 -- define default settings
 local kweisettings = {
   {key = "kwei.log.level", description = "Log level for kwei, either 'info', 'warn' or 'error'", type = "string", default = "warn"},
@@ -160,8 +174,29 @@ local kweisettings = {
 }
 
 for _, setting in ipairs(kweisettings) do
-  settings.define(setting.key, {description = setting.description, type = setting.type, default = setting.default})
+  -- check if the setting already exists
+  if settings.get(setting.key) then
+    printWarning("Setting " .. setting.key .. " already exists, skipping")
+  else
+    settings.define(setting.key, {description = setting.description, type = setting.type, default = setting.default})
+  end
 end
+
+-- add defining the settings to the startup script
+if fs.exists(startup) then
+  local file = fs.open(startup, "r")
+  local contents = file.readAll()
+  file.close()
+
+  if not contents:find("settings.define") then
+    file = fs.open(startup, "a")
+    for _, setting in ipairs(kweisettings) do
+      file.writeLine("settings.define(\"" .. setting.key .. "\", {description = \"" .. setting.description .. "\", type = \"" .. setting.type .. "\", default = \"" .. setting.default .. "\"})")
+    end
+    file.close()
+  end
+end
+
 printSuccess("Setup initial settings for kwei")
 
 printSuccess("Installed kwei")
