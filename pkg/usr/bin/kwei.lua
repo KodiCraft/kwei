@@ -40,12 +40,9 @@ local function usage()
   print("  help - show this help message")
   print("  passwd - set the admin password")
   print("  create <name> [image] - create a new container from an image")
-  print("  run <container> <executable> [args] - run an executable in a container")
   print("  shell <container> - open a shell in a container")
   print("  list - list all containers")
   print("  delete <container> - delete a container")
-  print("  overlay <container> <targetContainer> - overlay the file system of a container on top of another")
-  print("  cd <container> - change the current directory to the container's root")
 end
 
 HOME = settings.get("kwei.path.home")
@@ -230,11 +227,37 @@ local function shellInContainer(name)
   return
 end
 
+local function list()
+  print("Containers:")
+  local list = fs.list(HOME .. "/containers")
+  for i = 1, #list do
+    print("  " .. list[i])
+  end
+end
+
+local function delete(name)
+  if name == nil then
+    printError("No container name specified")
+    log:warn("No container name specified")
+    return
+  end
+  if not fs.exists(HOME .. "/containers/" .. name) then
+    printError("Container " .. name .. " does not exist")
+    log:warn("Container " .. name .. " does not exist")
+    return
+  end
+  fs.delete(HOME .. "/containers/" .. name)
+  printSuccess("Container " .. name .. " deleted")
+  log:info("Container " .. name .. " deleted")
+end
+
 local cmds = {
     {name = "help", func = usage},
     {name = "passwd", func = passwd},
     {name = "create", func = create},
     {name = "shell", func = shellInContainer}
+    {name = "list", func = list}
+    {name = "delete", func = delete}
 }
 
 if #args == 0 then
