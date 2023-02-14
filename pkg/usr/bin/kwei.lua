@@ -281,7 +281,7 @@ local function shellInContainer(name)
   globals._PARENT_LOGGER = log
   
 
-  local bioshandle = fs.open("/usr/lib/bios.lua")
+  local bioshandle = fs.open("/usr/lib/bios.lua", "r")
   if bioshandle == nil then
     printError("Failed to open bios.lua")
     log:error("Failed to open bios.lua")
