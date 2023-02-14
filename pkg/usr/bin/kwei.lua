@@ -281,10 +281,14 @@ local function shellInContainer(name)
   globals._PARENT_LOGGER = log
   
 
-  -- load the bios from the computercraft repo
-  local biosresponse = http.get("https://raw.githubusercontent.com/SquidDev-CC/CC-Tweaked/master/src/main/resources/assets/computercraft/lua/bios.lua")
-  local bios = biosresponse.readAll()
-  biosresponse.close()
+  local bioshandle = fs.open("/usr/lib/bios.lua")
+  if bioshandle == nil then
+    printError("Failed to open bios.lua")
+    log:error("Failed to open bios.lua")
+    return
+  end
+  local bios = bioshandle.readAll()
+  bioshandle.close()
 
   -- load the bios into a function
   local biosfunc, err = load(bios, "bios", "t", globals)

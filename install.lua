@@ -133,6 +133,32 @@ for _, file in ipairs(files) do
   printSuccess("Installed " .. file)
 end
 
+-- check the minor version of ComputerCraft
+local minorVersion = tonumber(_HOST:sub(17, 19))
+
+-- check if the file pkg/usr/lib/{version}-bios.lua can be found on the repo
+if not http.checkURL(pkgRoot .. "/usr/lib/" .. minorVersion .. "-bios.lua") then
+  printInfo("Could not find a bios.lua for ComputerCraft " .. minorVersion .. ", using the from upstream")
+  -- we'll download the upstream bios.lua from the ComputerCraft: Tweaked repo
+  local url = "https://raw.githubusercontent.com/SquidDev-CC/CC-Tweaked/master/src/main/resources/assets/computercraft/lua/bios.lua"
+  -- download the file as /usr/lib/bios.lua
+  local dest = "/usr/lib/bios.lua"
+  if not download(url, dest) then
+    printError("Could not install kwei: could not download " .. url)
+    return
+  end
+else
+  printInfo("Found a bios.lua for ComputerCraft " .. minorVersion .. ", using it")
+  -- we'll download the kwei bios.lua from the kwei repo
+  local url = pkgRoot .. "/usr/lib/" .. minorVersion .. "-bios.lua"
+  -- download the file as /usr/lib/bios.lua
+  local dest = "/usr/lib/bios.lua"
+  if not download(url, dest) then
+    printError("Could not install kwei: could not download " .. url)
+    return
+  end
+end
+
 -- add /usr/bin to the PATH
 local path = shell.path()
 if not path:find("/usr/bin") then
