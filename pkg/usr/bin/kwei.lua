@@ -238,13 +238,14 @@ local function shellInContainer(name)
   function genContainerPaths(...)
     local paths = {...}
     for i = 1, #paths do
-      paths[i] = genContainerPath(paths[i])
+      -- check if the path is a string, if it is not, we can just ignore it
+      if type(paths[i]) == "string" then
+        paths[i] = genContainerPath(paths[i])
+      else
+        log:warn("Path " .. paths[i] .. " is not a string, ignoring")
+      end
     end
     return unpack(paths)
-  end
-
-  function newfs.combine(...)
-    return fs.combine(...)
   end
 
   -- Use some metatable magic to make the fs API redirect to the container's fs
