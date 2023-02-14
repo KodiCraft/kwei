@@ -207,8 +207,9 @@ local function shellInContainer(name)
   globals.fs = nil
 
   -- nuke os.shutdown and os.reboot from the container
-  globals.os.shutdown = nil
-  globals.os.reboot = nil
+  globals.os.shutdown = function() log:warn("Container tried to shutdown the host") end
+  globals.os.reboot = function () log:warn("Container tried to reboot the host") end
+
 
   -- crete a new fs API that redirects to the container's fs
   local newfs = {}
