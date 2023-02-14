@@ -247,6 +247,13 @@ local function shellInContainer(name)
   local mt = {
     __index = function(t, k)
       if type(fs[k]) == "function" then
+        log:info("Calling fs." .. k .. " from container")
+        -- if we are calling 'open' we need to maintain the input mode
+        if k == "open" then
+          return function(path, mode)
+            return fs[k](genContainerPath(path), mode)
+          end
+        end
         return function(...)
           return fs[k](genContainerPaths(...))
         end
