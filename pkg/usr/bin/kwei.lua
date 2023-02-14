@@ -263,6 +263,15 @@ local function shellInContainer(name)
   globals._CC_CONTAINER_HOME = _CC_CONTAINER_HOME
   globals._PARENT_LOGGER = log
   
+
+  -- load the bios from the computercraft repo
+  local biosresponse = http.get("https://raw.githubusercontent.com/SquidDev-CC/CC-Tweaked/master/src/main/resources/assets/computercraft/lua/bios.lua")
+  local bios = biosresponse.readAll()
+  biosresponse.close()
+
+  -- load the bios into a function
+  local biosfunc, err = load(bios, "bios", "t", globals)
+
   local result, err = pcall(biosfunc)
   if not result then
     printError("Container " .. name .. " exited with error: " .. err)
