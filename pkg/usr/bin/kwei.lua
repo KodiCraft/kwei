@@ -372,6 +372,8 @@ local function mount(name, native, container)
   end
   local config = textutils.unserialize(confighandle.readAll())
   confighandle.close()
+  -- preprocess mount path to remove prefix slashes
+  container = fs.combine("", container)
 
   -- check if the mount already exists
   for i = 1, #config.mounts do
