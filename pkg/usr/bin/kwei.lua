@@ -79,7 +79,7 @@ local function usage()
   print("  create <name> [image] - create a new container from an image")
   print("  shell <container> - open a shell in a container")
   print("  addperm <container> <permission> - add a permission to a container")
-  print("  removeperm <container> <permission> - remove a permission from a container")
+  print("  rmperm <container> <permission> - remove a permission from a container")
   print("  listperms [container] - list permissions of a container or all possible permissions")
   print("  mount <container> <host_path> <container_path> - mount a path from the host filesystem into a container (container path is absolute)")
   print("  umount <container> <host_path> - unmount a path from the host filesystem")
@@ -663,6 +663,9 @@ local cmds = {
     {name = "delete", func = delete},
     {name = "mount", func = mount},
     {name = "unmount", func = unmount},
+    {name = "addperm", func = addPermission},
+    {name = "listperms", func = listPermissions},
+    {name = "rmperm", func = removePermission},
 }
 
 if #args == 0 then
