@@ -487,7 +487,9 @@ local cmds = {
     {name = "create", func = create},
     {name = "shell", func = shellInContainer},
     {name = "list", func = list},
-    {name = "delete", func = delete}
+    {name = "delete", func = delete},
+    {name = "mount", func = mount},
+    {name = "unmount", func = unmount},
 }
 
 if #args == 0 then
