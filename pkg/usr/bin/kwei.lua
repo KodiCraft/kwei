@@ -8,8 +8,9 @@ local crypto = require("k-crypto")
 
 local valid_permissions = {
   "http", -- In computercraft pre-1.102 this one needs to be handled differently
-  "disk",
-  "gps",
+  "debug",
+  -- wow there really isn't much here
+  -- consider this a stub to make sure the system works
 }
 
 local args = {...}
@@ -233,6 +234,11 @@ local function shellInContainer(name)
   -- nuke http from the container if it does not have the permission
   if not table.contains(config.permissions, "http") then
     globals.http = nil
+  end
+
+  -- nuke debug from the container if it does not have the permission
+  if not table.contains(config.permissions, "debug") then
+    globals.debug = nil
   end
 
   -- crete a new fs API that redirects to the container's fs
