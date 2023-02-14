@@ -6,6 +6,12 @@ package.path = package.path .. ";/usr/lib/?.lua"
 local logger = require("k-log")
 local crypto = require("k-crypto")
 
+local valid_permissions = {
+  "http", -- In computercraft pre-1.102 this one needs to be handled differently
+  "disk",
+  "gps",
+}
+
 local args = {...}
 
 log = logger.Logger:new()
@@ -30,6 +36,15 @@ function deepcopy(orig, copies)
       copy = orig
   end
   return copy
+end
+
+function table.contains(table, element)
+  for _, value in pairs(table) do
+      if value == element then
+          return true
+      end
+  end
+  return false
 end
 
 local function printError(text)
@@ -62,9 +77,12 @@ local function usage()
   print("  help - show this help message")
   print("  passwd - set the admin password")
   print("  create <name> [image] - create a new container from an image")
+  print("  shell <container> - open a shell in a container")
+  print("  addperm <container> <permission> - add a permission to a container")
+  print("  removeperm <container> <permission> - remove a permission from a container")
+  print("  listperms [container] - list permissions of a container or all possible permissions")
   print("  mount <container> <host_path> <container_path> - mount a path from the host filesystem into a container (container path is absolute)")
   print("  umount <container> <host_path> - unmount a path from the host filesystem")
-  print("  shell <container> - open a shell in a container")
   print("  list - list all containers")
   print("  delete <container> - delete a container")
 end
@@ -212,6 +230,10 @@ local function shellInContainer(name)
   globals.os.shutdown = function() error("Tried to shutdown from the container") end
   globals.os.reboot = function () error("Tried to reboot from the container") end
 
+  -- nuke http from the container if it does not have the permission
+  if not table.contains(config.permissions, "http") then
+    globals.http = nil
+  end
 
   -- crete a new fs API that redirects to the container's fs
   local newfs = {}
@@ -221,6 +243,17 @@ local function shellInContainer(name)
     -- check we are not starting with ".." verifies that the path is not outside the container's fs
     if string.sub(resolved, 1, 2) == ".." then
       error("Path " .. path .. " is outside the container's filesystem")
+    end
+    -- check if the path is in rom/api/{a-valid-permission-api}
+    if string.sub(resolved, 1, 8) == "rom/api/" then
+      -- check if the path is in any of the container's permissions
+      for _, permission in pairs(config.permissions) do
+        -- if the path starts with the permission's container path, redirect it to the permission's native path
+        if string.sub(resolved, 9, string.len(permission)) == permission then
+          log:info("Redirecting " .. path .. " to " .. fs.combine(permission, string.sub(resolved, string.len(permission) + 1)) .. " (permission)")
+          return fs.combine(permission, string.sub(resolved, string.len(permission) + 1))
+        end
+      end
     end
     -- check if the path is in any of the container's mounts
     for _, mount in pairs(config.mounts) do
@@ -482,6 +515,144 @@ local function unmount(name, path)
   log:info("Mount " .. path .. " removed")
   return
 end
+
+local function addPermission(name, perm)
+  -- arg check
+  if name == nil then
+    printError("No container name specified")
+    log:warn("No container name specified")
+    return
+  end
+  if not table.contains(valid_permissions, perm) then
+    printError("Invalid permission " .. perm)
+    printInfo("Valid permissions are: " .. table.concat(valid_permissions, ", "))
+    log:warn("Invalid permission " .. perm)
+    return
+  end
+
+  -- check if the container exists
+  if not fs.exists(HOME .. "/containers/" .. name) then
+    printError("Container " .. name .. " does not exist")
+    log:warn("Container " .. name .. " does not exist")
+    return
+  end
+
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "r")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  local config = textutils.unserialize(confighandle.readAll())
+
+  -- check if the permission already exists
+  for i = 1, #config.permissions do
+    if config.permissions[i] == perm then
+      printError("Permission " .. perm .. " already granted to " .. name)
+      log:warn("Permission " .. perm .. " already granted to " .. name)
+      return
+    end
+  end
+
+  -- add the permission
+  table.insert(config.permissions, perm)
+
+  -- write the config back
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "w")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  confighandle.write(textutils.serialize(config))
+  confighandle.close()
+end
+
+local function listPermissions(name)
+  -- if no name is specified, list all possible permissions
+  if name == nil then
+    printInfo("Valid permissions are: " .. table.concat(valid_permissions, ", "))
+    return
+  end
+
+  -- check if the container exists
+  if not fs.exists(HOME .. "/containers/" .. name) then
+    printError("Container " .. name .. " does not exist")
+    log:warn("Container " .. name .. " does not exist")
+    return
+  end
+
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "r")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  local config = textutils.unserialize(confighandle.readAll())
+
+  printInfo("Permissions for " .. name .. ":")
+  for i = 1, #config.permissions do
+    printInfo("  " .. config.permissions[i])
+  end
+end
+
+local function removePermission(name, perm)
+  -- arg check
+  if name == nil then
+    printError("No container name specified")
+    log:warn("No container name specified")
+    return
+  end
+  if not table.contains(valid_permissions, perm) then
+    printError("Invalid permission " .. perm)
+    printInfo("Valid permissions are: " .. table.concat(valid_permissions, ", "))
+    log:warn("Invalid permission " .. perm)
+    return
+  end
+
+  -- check if the container exists
+  if not fs.exists(HOME .. "/containers/" .. name) then
+    printError("Container " .. name .. " does not exist")
+    log:warn("Container " .. name .. " does not exist")
+    return
+  end
+
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "r")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  local config = textutils.unserialize(confighandle.readAll())
+  confighandle.close()
+
+  -- check if the permission exists
+  local found = false
+  for i = 1, #config.permissions do
+    if config.permissions[i] == perm then
+      found = true
+      table.remove(config.permissions, i)
+      break
+    end
+  end
+
+  if not found then
+    printError("Permission " .. perm .. " not granted to " .. name)
+    log:warn("Permission " .. perm .. " not granted to " .. name)
+    return
+  end
+
+  -- write the config back
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "w")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  confighandle.write(textutils.serialize(config))
+  confighandle.close()
+end
+
 
 local cmds = {
     {name = "help", func = usage},
