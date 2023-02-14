@@ -1,4 +1,3 @@
 /usr/bin/kwei.lua
 /usr/lib/k-crypto.lua
 /usr/lib/k-log.lua
-/usr/lib/kwei-patched-bios.lua

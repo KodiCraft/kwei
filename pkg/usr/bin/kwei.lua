@@ -154,7 +154,7 @@ local function create(name, image)
   config.overlays = {}
   config.permissions = {}
   config.peripherals = {}
-  config.mounts = {}
+  config.mounts = {{native = "/rom", container = "/rom"}}
 
   -- write config to file
   local confighandle = fs.open(containerhome .. "/config", "w")
@@ -164,11 +164,8 @@ local function create(name, image)
   -- create container filesystem
   local fsdir = containerhome .. "/fs"
   
-  -- create rom directory for directory list to work
+  -- create rom directory for rom mount
   fs.makeDir(fsdir .. "/rom")
-  
-  -- copy the patched bios to the container's filesystem
-  fs.copy("/usr/lib/kwei-patched-bios.lua", fsdir .. "/bios.lua")
 
   printSuccess("Container " .. name .. " created")
   log:info("Container " .. name .. " created")
@@ -199,26 +196,73 @@ local function shellInContainer(name)
   -- create the container's required global:
   _CC_CONTAINER_HOME = HOME .. "/containers/" .. name .. "/fs"
   log:info("Container home set to " .. _CC_CONTAINER_HOME)
-  -- Create a new global table for the container, it should have all the globals that are critical for the system
+  -- Create a new global table for the container, we will give it globals only if it has the permission to use them
+  -- TODO: Handle permissions for /rom APIs
   local copies = {}
   local oldglobals = deepcopy(_G, copies)
   copies = {}
   local globals = deepcopy(_G, copies)
+
+  -- nuke globals for fs from the container
+  globals.fs = nil
+
+  -- crete a new fs API that redirects to the container's fs
+  local newfs = {}
+  function genContainerPath(path)
+    -- resolve the path to remove any relative paths
+    local resolved = fs.combine("", path)
+    -- check we are not starting with ".." verifies that the path is not outside the container's fs
+    if string.sub(resolved, 1, 2) == ".." then
+      error("Path " .. path .. " is outside the container's filesystem")
+    end
+    -- check if the path is in any of the container's mounts
+    for _, mount in pairs(config.mounts) do
+      if fs.isDir(_CC_CONTAINER_HOME .. mount.container) then
+        if fs.isDir(fs.combine(_CC_CONTAINER_HOME .. mount.container, resolved)) then
+          log:info("Redirecting " .. path .. " to " .. fs.combine(mount.native, resolved))
+          return fs.combine(mount.native, resolved)
+        end
+      end
+    end
+
+    -- if we get here, the path is not in any of the container's mounts
+    -- redirect it to the container's fs
+    log:info("Redirecting " .. path .. " to " .. fs.combine(_CC_CONTAINER_HOME, resolved))
+    return fs.combine(_CC_CONTAINER_HOME, resolved)
+  end
+
+  function genContainerPaths(...)
+    local paths = {...}
+    for i = 1, #paths do
+      paths[i] = genContainerPath(paths[i])
+    end
+    return unpack(paths)
+  end
+
+  function newfs.combine(...)
+    return fs.combine(...)
+  end
+
+  -- Use some metatable magic to make the fs API redirect to the container's fs
+  local mt = {
+    __index = function(t, k)
+      if type(fs[k]) == "function" then
+        return function(...)
+          return fs[k](genContainerPaths(...))
+        end
+      else
+        return fs[k]
+      end
+    end
+  }
+
+  setmetatable(newfs, mt)
+
+  globals.fs = newfs
   globals._G = globals
   globals._CC_CONTAINER_HOME = _CC_CONTAINER_HOME
   globals._PARENT_LOGGER = log
-
-  -- start the patched bios
-  local bios = fs.open("/usr/lib/kwei-patched-bios.lua", "r")
-  local bioscode = bios.readAll()
-  bios.close()
-  log:info("Loaded bios.lua from container " .. name)
-  local biosfunc, comperror = load(bioscode, "bios.lua", "t", globals)
-  if biosfunc == nil then
-    printError("A compilation error has occured in bios.lua: " .. comperror)
-    log:error("A compilation error has occured in bios.lua: " .. comperror)
-    return
-  end
+  
   local result, err = pcall(biosfunc)
   if not result then
     printError("Container " .. name .. " exited with error: " .. err)
