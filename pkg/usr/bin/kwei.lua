@@ -243,6 +243,7 @@ local function shellInContainer(name)
         paths[i] = genContainerPath(paths[i])
       else
         log:warn("Path " .. paths[i] .. " is not a string, ignoring")
+        paths[i] = paths[i]
       end
     end
     return unpack(paths)
@@ -261,10 +262,8 @@ local function shellInContainer(name)
         end
         -- if we are calling 'complete' or 'combine' we need to maintain the input path
         if k == "complete" or k == "combine" then
-          return function(...)
-            return fs[k](...)
-          end
-        end 
+          return fs[k]
+        end
         return function(...)
           return fs[k](genContainerPaths(...))
         end
