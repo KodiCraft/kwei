@@ -211,6 +211,9 @@ local function shellInContainer(name)
   function genContainerPath(path)
     -- resolve the path to remove any relative paths
     local resolved = fs.combine("", path)
+    if string.sub(resolved, 1, 1) ~= "/" then
+      resolved = "/" .. resolved
+    end
     -- check we are not starting with ".." verifies that the path is not outside the container's fs
     if string.sub(resolved, 1, 2) == ".." then
       error("Path " .. path .. " is outside the container's filesystem")
