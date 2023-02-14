@@ -62,6 +62,8 @@ local function usage()
   print("  help - show this help message")
   print("  passwd - set the admin password")
   print("  create <name> [image] - create a new container from an image")
+  print("  mount <container> <host_path> <container_path> - mount a path from the host filesystem into a container (container path is absolute)")
+  print("  umount <container> <host_path> - unmount a path from the host filesystem")
   print("  shell <container> - open a shell in a container")
   print("  list - list all containers")
   print("  delete <container> - delete a container")
@@ -335,6 +337,148 @@ local function delete(name)
   fs.delete(HOME .. "/containers/" .. name)
   printSuccess("Container " .. name .. " deleted")
   log:info("Container " .. name .. " deleted")
+end
+
+local function mount(name, native, container)
+  -- args check
+  if name == nil then
+    printError("No mount name specified")
+    log:warn("No mount name specified")
+    return
+  end
+  if native == nil then
+    printError("No native path specified")
+    log:warn("No native path specified")
+    return
+  end
+  if container == nil then
+    printError("No container path specified")
+    log:warn("No container path specified")
+    return
+  end
+
+  -- check if the container exists
+  if not fs.exists(HOME .. "/containers/" .. name) then
+    printError("Container " .. name .. " does not exist")
+    log:warn("Container " .. name .. " does not exist")
+    return
+  end
+
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "r")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  local config = textutils.unserialize(confighandle.readAll())
+  confighandle.close()
+
+  -- check if the mount already exists
+  for i = 1, #config.mounts do
+    if config.mounts[i].name == name then
+      printError("Mount " .. name .. " already exists")
+      log:warn("Mount " .. name .. " already exists")
+      return
+    end
+  end
+
+  -- if the native path is relative, make it absolute
+  if string.sub(native, 1, 1) ~= "/" then
+    native = fs.combine(shell.dir(), native)
+  end
+
+  -- check if the native path exists
+  if not fs.exists(native) then
+    printError("Native path " .. native .. " does not exist")
+    log:warn("Native path " .. native .. " does not exist")
+    return
+  end
+
+  -- make the directory in the container's file system
+  local containerpath = fs.combine(HOME .. "/containers/" .. name .. "/fs/", container)
+  if not fs.exists(containerpath) then
+    fs.makeDir(containerpath)
+  end
+
+  -- add the mount to the config
+  table.insert(config.mounts, {native = native, container = container})
+
+  -- write the config back
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "w")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  confighandle.write(textutils.serialize(config))
+  confighandle.close()
+
+  printSuccess("Mount " .. container .. " added")
+  log:info("Mount " .. container .. " added")
+
+  return
+end
+
+local function unmount(name, path)
+  -- args check
+  if name == nil then
+    printError("No container name specified")
+    log:warn("No container name specified")
+    return
+  end
+  if path == nil then
+    printError("No container path specified")
+    log:warn("No container path specified")
+    return
+  end
+
+  -- check if the container exists
+  if not fs.exists(HOME .. "/containers/" .. name) then
+    printError("Container " .. name .. " does not exist")
+    log:warn("Container " .. name .. " does not exist")
+    return
+  end
+
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "r")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  local config = textutils.unserialize(confighandle.readAll())
+
+  -- preprocess the path to make sure it's absolute
+  path = fs.combine("", path)
+
+  -- check if the mount exists
+  local found = false
+  for i = 1, #config.mounts do
+    if config.mounts[i].container == path then
+      found = true
+      table.remove(config.mounts, i)
+      break
+    end
+  end
+
+  if not found then
+    printError("Mount " .. path .. " does not exist")
+    log:warn("Mount " .. path .. " does not exist")
+    return
+  end
+
+  -- write the config back
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "w")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  confighandle.write(textutils.serialize(config))
+  confighandle.close()
+
+  printSuccess("Mount " .. path .. " removed")
+  log:info("Mount " .. path .. " removed")
+  return
 end
 
 local cmds = {
