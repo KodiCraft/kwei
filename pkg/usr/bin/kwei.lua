@@ -206,6 +206,10 @@ local function shellInContainer(name)
   -- nuke globals for fs from the container
   globals.fs = nil
 
+  -- nuke os.shutdown and os.reboot from the container
+  globals.os.shutdown = nil
+  globals.os.reboot = nil
+
   -- crete a new fs API that redirects to the container's fs
   local newfs = {}
   function genContainerPath(path)
@@ -217,11 +221,9 @@ local function shellInContainer(name)
     end
     -- check if the path is in any of the container's mounts
     for _, mount in pairs(config.mounts) do
-      log:info("Checking mount " .. mount.native .. " -> " .. mount.container)
       -- if the path starts with the mount's container path, redirect it to the mount's native path
       if string.sub(resolved, 1, string.len(mount.container)) == mount.container then
-        log:info("Found mount for " .. path .. " in container")
-        log:info("Redirecting " .. path .. " to " .. fs.combine(mount.native, string.sub(resolved, string.len(mount.container) + 1)))
+        log:info("Redirecting " .. path .. " to " .. fs.combine(mount.native, string.sub(resolved, string.len(mount.container) + 1)) .. " (mount)")
         return fs.combine(mount.native, string.sub(resolved, string.len(mount.container) + 1))
       end
     end
@@ -255,6 +257,12 @@ local function shellInContainer(name)
             return fs[k](genContainerPath(path), mode)
           end
         end
+        -- if we are calling 'complete' or 'combine' we need to maintain the input path
+        if k == "complete" or k == "combine" then
+          return function(...)
+            return fs[k](...)
+          end
+        end 
         return function(...)
           return fs[k](genContainerPaths(...))
         end
