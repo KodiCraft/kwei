@@ -154,7 +154,7 @@ local function create(name, image)
   config.overlays = {}
   config.permissions = {}
   config.peripherals = {}
-  config.mounts = {{native = "/rom", container = "/rom"}}
+  config.mounts = {{native = "rom", container = "rom"}}
 
   -- write config to file
   local confighandle = fs.open(containerhome .. "/config", "w")
@@ -211,20 +211,18 @@ local function shellInContainer(name)
   function genContainerPath(path)
     -- resolve the path to remove any relative paths
     local resolved = fs.combine("", path)
-    if string.sub(resolved, 1, 1) ~= "/" then
-      resolved = "/" .. resolved
-    end
     -- check we are not starting with ".." verifies that the path is not outside the container's fs
     if string.sub(resolved, 1, 2) == ".." then
       error("Path " .. path .. " is outside the container's filesystem")
     end
     -- check if the path is in any of the container's mounts
     for _, mount in pairs(config.mounts) do
-      if fs.isDir(_CC_CONTAINER_HOME .. mount.container) then
-        if fs.isDir(fs.combine(_CC_CONTAINER_HOME .. mount.container, resolved)) then
-          log:info("Redirecting " .. path .. " to " .. fs.combine(mount.native, resolved))
-          return fs.combine(mount.native, resolved)
-        end
+      log:info("Checking mount " .. mount.native .. " -> " .. mount.container)
+      -- if the path starts with the mount's container path, redirect it to the mount's native path
+      if string.sub(resolved, 1, string.len(mount.container)) == mount.container then
+        log:info("Found mount for " .. path .. " in container")
+        log:info("Redirecting " .. path .. " to " .. fs.combine(mount.native, string.sub(resolved, string.len(mount.container) + 1)))
+        return fs.combine(mount.native, string.sub(resolved, string.len(mount.container) + 1))
       end
     end
 
