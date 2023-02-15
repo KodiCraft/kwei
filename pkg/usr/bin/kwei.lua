@@ -84,6 +84,10 @@ local function usage()
   print("  listperms [container] - list permissions of a container or all possible permissions")
   print("  mount <container> <host_path> <container_path> - mount a path from the host filesystem into a container (container path is absolute)")
   print("  umount <container> <host_path> - unmount a path from the host filesystem")
+  print("  listmounts <container> - list all mounts of a container")
+  print("  addperi <container> <peripheral> [innername] - add a peripheral to a container")
+  print("  rmperi <container> <peripheral> - remove a peripheral from a container")
+  print("  listperis <container> - list all peripherals of a container")
   print("  list - list all containers")
   print("  delete <container> - delete a container")
 end
@@ -227,6 +231,9 @@ local function shellInContainer(name)
   -- nuke globals for fs from the container
   globals.fs = nil
 
+  -- nuke globals for peripherals from the container
+  globals.peripheral = nil
+
   -- nuke os.shutdown and os.reboot from the container
   globals.os.shutdown = function() error("Tried to shutdown from the container") end
   globals.os.reboot = function () error("Tried to reboot from the container") end
@@ -301,7 +308,7 @@ local function shellInContainer(name)
   end
 
   -- Use some metatable magic to make the fs API redirect to the container's fs
-  local mt = {
+  local fsmt = {
     __index = function(t, k)
       if type(fs[k]) == "function" then
         log:info("Calling fs." .. k .. " from container")
@@ -324,7 +331,35 @@ local function shellInContainer(name)
     end
   }
 
-  setmetatable(newfs, mt)
+  -- create a new peripheral API that redirects peripherals according to the container's config
+  local newperipheral = {}
+  function genContainerPeripheral(name)
+    -- check if the container has a peripheral matching the name
+    for _, peripheral in pairs(config.peripherals) do
+      if peripheral.container == name then
+        log:info("Redirecting peripheral " .. name .. " to " .. peripheral.native)
+        return peripheral.native
+      end
+    end
+    -- if we get here, the container does not have a peripheral matching the name
+    error("Access peripheral " .. name .. ", unauthorized")
+  end
+
+  -- Use some metatable magic to make the peripheral API redirect to the container's peripherals
+  local peripheralmt = {
+    __index = function(t, k)
+      if type(peripheral[k]) == "function" then
+        log:info("Calling peripheral." .. k .. " from container")
+        return function(...)
+          return peripheral[k](genContainerPeripheral(...))
+        end
+      else
+        return peripheral[k]
+      end
+    end
+  }
+
+  setmetatable(newfs, fsmt)
 
   globals.fs = newfs
   globals._G = globals
@@ -532,6 +567,37 @@ local function unmount(name, path)
   return
 end
 
+local function listmounts(name)
+  -- args check
+  if name == nil then
+    printError("No container name specified")
+    log:warn("No container name specified")
+    return
+  end
+
+  -- check if the container exists
+  if not fs.exists(HOME .. "/containers/" .. name) then
+    printError("Container " .. name .. " does not exist")
+    log:warn("Container " .. name .. " does not exist")
+    return
+  end
+
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "r")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  local config = textutils.unserialize(confighandle.readAll())
+  confighandle.close()
+
+  printInfo("Mounts for container " .. name .. ":")
+  for i = 1, #config.mounts do
+    printInfo("  " .. config.mounts[i].container .. " -> " .. config.mounts[i].native)
+  end
+  return
+end
+
 local function addPermission(name, perm)
   -- arg check
   if name == nil then
@@ -669,6 +735,162 @@ local function removePermission(name, perm)
   confighandle.close()
 end
 
+local function addPeripheral(name, peri, inner)
+  -- arg check
+  if name == nil then
+    printError("No container name specified")
+    log:warn("No container name specified")
+    return
+  end
+  if peri == nil then
+    printError("No peripheral name specified")
+    log:warn("No peripheral name specified")
+    return
+  end
+  if inner == nil then
+    inner = peri
+  end
+
+  -- check if the container exists
+  if not fs.exists(HOME .. "/containers/" .. name) then
+    printError("Container " .. name .. " does not exist")
+    log:warn("Container " .. name .. " does not exist")
+    return
+  end
+
+  -- load the config
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "r")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  local config = textutils.unserialize(confighandle.readAll())
+  confighandle.close()
+
+
+  -- check if the peripheral exists
+  if not peripheral.isPresent(peri) then
+    printError("Peripheral " .. peri .. " not found")
+    log:warn("Peripheral " .. peri .. " not found")
+    return
+  end
+
+  -- check if the peripheral is already added
+  for i = 1, #config.peripherals do
+    if config.peripherals[i].native == peri then
+      printError("Peripheral " .. peri .. " already added to " .. name)
+      log:warn("Peripheral " .. peri .. " already added to " .. name)
+      return
+    end
+  end
+
+  -- add the peripheral
+  table.insert(config.peripherals, {native = peri, inner = inner})
+
+  -- write the config back
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "w")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  confighandle.write(textutils.serialize(config))
+  confighandle.close()
+
+  printInfo("Added peripheral " .. peri .. " to " .. name)
+end
+
+local function rmPeripheral(name, peri)
+  -- arg check
+  if name == nil then
+    printError("No container name specified")
+    log:warn("No container name specified")
+    return
+  end
+  if peri == nil then
+    printError("No peripheral name specified")
+    log:warn("No peripheral name specified")
+    return
+  end
+
+  -- check if the container exists
+  if not fs.exists(HOME .. "/containers/" .. name) then
+    printError("Container " .. name .. " does not exist")
+    log:warn("Container " .. name .. " does not exist")
+    return
+  end
+
+  -- load the config
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "r")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  local config = textutils.unserialize(confighandle.readAll())
+  confighandle.close()
+
+  -- check if the peripheral exists
+  local found = false
+  for i = 1, #config.peripherals do
+    if config.peripherals[i].native == peri then
+      found = true
+      table.remove(config.peripherals, i)
+      break
+    end
+  end
+
+  if not found then
+    printError("Peripheral " .. peri .. " not found in " .. name)
+    log:warn("Peripheral " .. peri .. " not found in " .. name)
+    return
+  end
+
+  -- write the config back
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "w")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  confighandle.write(textutils.serialize(config))
+  confighandle.close()
+
+  printInfo("Removed peripheral " .. peri .. " from " .. name)
+end
+
+local function listPeripherals(name)
+  -- arg check
+  if name == nil then
+    printError("No container name specified")
+    log:warn("No container name specified")
+    return
+  end
+
+  -- check if the container exists
+  if not fs.exists(HOME .. "/containers/" .. name) then
+    printError("Container " .. name .. " does not exist")
+    log:warn("Container " .. name .. " does not exist")
+    return
+  end
+
+  -- load the config
+  local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "r")
+  if confighandle == nil then
+    printError("Failed to open container config")
+    log:error("Failed to open container config")
+    return
+  end
+  local config = textutils.unserialize(confighandle.readAll())
+  confighandle.close()
+
+  -- print the peripherals
+  for i = 1, #config.peripherals do
+    print(config.peripherals[i].native .. " -> " .. config.peripherals[i].inner)
+  end
+end
+end
 
 local cmds = {
     {name = "help", func = usage},
@@ -682,6 +904,9 @@ local cmds = {
     {name = "addperm", func = addPermission},
     {name = "listperms", func = listPermissions},
     {name = "rmperm", func = removePermission},
+    {name = "addperi", func = addPeripheral},
+    {name = "listperis", func = listPeripherals},
+    {name = "rmperi", func = rmPeripheral},
 }
 
 if #args == 0 then
