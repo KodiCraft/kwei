@@ -354,7 +354,7 @@ local function shellInContainer(name)
   end
 
   function newperipheral.isPresent(name)
-    for _, peripheral in pairs(config.peripherals) do
+    for _, peripheral in ipairs(config.peripherals) do
       if peripheral.container == name then
         return true
       end
@@ -363,7 +363,7 @@ local function shellInContainer(name)
   end
 
   function newperipheral.getType(name)
-    for _, peri in pairs(config.peripherals) do
+    for _, peri in ipairs(config.peripherals) do
       if peri.container == name then
         return peripheral.getType(peri.native)
       end
@@ -372,7 +372,7 @@ local function shellInContainer(name)
   end
 
   function newperipheral.getMethods(name)
-    for _, peri in pairs(config.peripherals) do
+    for _, peri in ipairs(config.peripherals) do
       if peri.container == name then
         return peripheral.getMethods(peri.native)
       end
@@ -381,7 +381,7 @@ local function shellInContainer(name)
   end
 
   function newperipheral.call(name, method, ...)
-    for _, peri in pairs(config.peripherals) do
+    for _, peri in ipairs(config.peripherals) do
       if peri.container == name then
         return peripheral.call(peri.native, method, ...)
       end
@@ -390,7 +390,7 @@ local function shellInContainer(name)
   end
 
   function newperipheral.wrap(name)
-    for _, peri in pairs(config.peripherals) do
+    for _, peri in ipairs(config.peripherals) do
       if peri.container == name then
         return peripheral.wrap(peri.native)
       end
@@ -826,7 +826,7 @@ local function addPeripheral(name, peri, inner)
   end
 
   -- add the peripheral
-  table.insert(config.peripherals, {native = peri, inner = inner})
+  table.insert(config.peripherals, {native = peri, container = inner})
 
   -- write the config back
   local confighandle = fs.open(HOME .. "/containers/" .. name .. "/config", "w")
@@ -928,7 +928,7 @@ local function listPeripherals(name)
   -- print the peripherals
   printInfo("Peripherals for " .. name)
   for i = 1, #config.peripherals do
-    print(config.peripherals[i].native .. " -> " .. config.peripherals[i].inner)
+    print(config.peripherals[i].native .. " -> " .. config.peripherals[i].container)
   end
 end
 
