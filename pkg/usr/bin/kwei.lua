@@ -890,7 +890,6 @@ local function listPeripherals(name)
     print(config.peripherals[i].native .. " -> " .. config.peripherals[i].inner)
   end
 end
-end
 
 local cmds = {
     {name = "help", func = usage},
