@@ -139,7 +139,7 @@ local minorVersion = tonumber(_HOST:sub(17, 19))
 -- check if the file pkg/usr/lib/{version}-bios.lua can be found on the repo
 local response = http.get(pkgRoot .. "/usr/lib/" .. minorVersion .. "-bios.lua")
 if response == nil or response.getResponseCode() ~= 200 then
-  printInfo("Could not find a bios.lua for ComputerCraft " .. minorVersion .. ", using the from upstream")
+  printInfo("Could not find a bios.lua for ComputerCraft " .. minorVersion .. ", using the bios from CC-Tweaked/master")
   -- we'll download the upstream bios.lua from the ComputerCraft: Tweaked repo
   local url = "https://raw.githubusercontent.com/SquidDev-CC/CC-Tweaked/master/src/main/resources/assets/computercraft/lua/bios.lua"
   -- download the file as /usr/lib/bios.lua
