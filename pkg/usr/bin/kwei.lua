@@ -238,7 +238,17 @@ local function shellInContainer(name)
 
   -- nuke debug from the container if it does not have the permission
   if not table.contains(config.permissions, "debug") then
-    globals.debug = nil
+    globals.debug = {}
+    -- Add some fake debug functions to prevent errors that return placeholders
+    globals.debug.getregistry = function() return "debug.getregistry is not available in this container" end
+    globals.debug.getinfo = function() return "debug.getinfo is not available in this container" end
+    globals.debug.getlocal = function() return "debug.getlocal is not available in this container" end
+    globals.debug.getupvalue = function() return "debug.getupvalue is not available in this container" end
+    globals.debug.setlocal = function() return "debug.setlocal is not available in this container" end
+    globals.debug.setupvalue = function() return "debug.setupvalue is not available in this container" end
+    globals.debug.traceback = function() return "debug.traceback is not available in this container" end
+    globals.debug.upvalueid = function() return "debug.upvalueid is not available in this container" end
+    globals.debug.upvaluejoin = function() return "debug.upvaluejoin is not available in this container" end
   end
 
   -- crete a new fs API that redirects to the container's fs
