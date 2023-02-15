@@ -345,23 +345,63 @@ local function shellInContainer(name)
     error("Access peripheral " .. name .. ", unauthorized")
   end
 
-  -- Use some metatable magic to make the peripheral API redirect to the container's peripherals
-  local peripheralmt = {
-    __index = function(t, k)
-      if type(peripheral[k]) == "function" then
-        log:info("Calling peripheral." .. k .. " from container")
-        return function(...)
-          return peripheral[k](genContainerPeripheral(...))
-        end
-      else
-        return peripheral[k]
+  local function newperipheral.getNames()
+    local names = {}
+    for _, peripheral in pairs(config.peripherals) do
+      table.insert(names, peripheral.container)
+    end
+    return names
+  end
+
+  local function newperipheral.isPresent(name)
+    for _, peripheral in pairs(config.peripherals) do
+      if peripheral.container == name then
+        return true
       end
     end
-  }
+    return false
+  end
 
+  local function newperipheral.getType(name)
+    for _, peri in pairs(config.peripherals) do
+      if peri.container == name then
+        return peripheral.getType(peri.native)
+      end
+    end
+    return nil
+  end
+
+  local function newperipheral.getMethods(name)
+    for _, peri in pairs(config.peripherals) do
+      if peri.container == name then
+        return peripheral.getMethods(peri.native)
+      end
+    end
+    return nil
+  end
+
+  local function newperipheral.call(name, method, ...)
+    for _, peri in pairs(config.peripherals) do
+      if peri.container == name then
+        return peripheral.call(peri.native, method, ...)
+      end
+    end
+    return nil
+  end
+
+  local function newperipheral.wrap(name)
+    for _, peri in pairs(config.peripherals) do
+      if peri.container == name then
+        return peripheral.wrap(peri.native)
+      end
+    end
+    return nil
+  end
+  
   setmetatable(newfs, fsmt)
 
   globals.fs = newfs
+  globals.peripheral = newperipheral
   globals._G = globals
   globals._CC_CONTAINER_HOME = _CC_CONTAINER_HOME
   globals._PARENT_LOGGER = log
@@ -886,6 +926,7 @@ local function listPeripherals(name)
   confighandle.close()
 
   -- print the peripherals
+  printInfo("Peripherals for " .. name)
   for i = 1, #config.peripherals do
     print(config.peripherals[i].native .. " -> " .. config.peripherals[i].inner)
   end
