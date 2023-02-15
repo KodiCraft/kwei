@@ -345,7 +345,7 @@ local function shellInContainer(name)
     error("Access peripheral " .. name .. ", unauthorized")
   end
 
-  local function newperipheral.getNames()
+  function newperipheral.getNames()
     local names = {}
     for _, peripheral in pairs(config.peripherals) do
       table.insert(names, peripheral.container)
@@ -353,7 +353,7 @@ local function shellInContainer(name)
     return names
   end
 
-  local function newperipheral.isPresent(name)
+  function newperipheral.isPresent(name)
     for _, peripheral in pairs(config.peripherals) do
       if peripheral.container == name then
         return true
@@ -362,7 +362,7 @@ local function shellInContainer(name)
     return false
   end
 
-  local function newperipheral.getType(name)
+  function newperipheral.getType(name)
     for _, peri in pairs(config.peripherals) do
       if peri.container == name then
         return peripheral.getType(peri.native)
@@ -371,7 +371,7 @@ local function shellInContainer(name)
     return nil
   end
 
-  local function newperipheral.getMethods(name)
+  function newperipheral.getMethods(name)
     for _, peri in pairs(config.peripherals) do
       if peri.container == name then
         return peripheral.getMethods(peri.native)
@@ -380,7 +380,7 @@ local function shellInContainer(name)
     return nil
   end
 
-  local function newperipheral.call(name, method, ...)
+  function newperipheral.call(name, method, ...)
     for _, peri in pairs(config.peripherals) do
       if peri.container == name then
         return peripheral.call(peri.native, method, ...)
@@ -389,7 +389,7 @@ local function shellInContainer(name)
     return nil
   end
 
-  local function newperipheral.wrap(name)
+  function newperipheral.wrap(name)
     for _, peri in pairs(config.peripherals) do
       if peri.container == name then
         return peripheral.wrap(peri.native)
@@ -397,7 +397,7 @@ local function shellInContainer(name)
     end
     return nil
   end
-  
+
   setmetatable(newfs, fsmt)
 
   globals.fs = newfs
