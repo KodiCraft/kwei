@@ -347,7 +347,7 @@ local function shellInContainer(name)
 
   function newperipheral.getNames()
     local names = {}
-    for _, peripheral in pairs(config.peripherals) do
+    for _, peripheral in ipairs(config.peripherals) do
       table.insert(names, peripheral.container)
     end
     return names
