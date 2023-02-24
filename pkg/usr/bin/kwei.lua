@@ -444,12 +444,12 @@ local function runInContainer(name, arg1, arg2)
 
   if arg2 == nil then
     script = fs.combine("./", arg1)
-  else
-    if arg1 == nil then
+  elseif arg1 == nil then
       printError("No script specified")
       printError("Usage: run <container> [pastebin] <script/id>")
       log:warn("No script specified")
       return
+  end
     elseif arg1 == pastebin then
       -- download the script from pastebin
       local handle = http.get("http://pastebin.com/raw.php?i=" .. arg2)
