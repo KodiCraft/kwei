@@ -996,14 +996,23 @@ if fs.exists(".settings") then
     settings.load(".settings")
 end
 
+
+
+local shellFile = "rom/programs/shell.lua"
+local advancedShellFile = "rom/programs/advanced/multishell.lua"
+if _KWEI_RUN_FILE ~= nil then
+    shellFile = _KWEI_RUN_FILE
+    advancedShellFile = _KWEI_RUN_FILE
+end
+
 -- Run the shell
 local ok, err = pcall(parallel.waitForAny,
     function()
         local sShell
         if term.isColour() and settings.get("bios.use_multishell") then
-            sShell = "rom/programs/advanced/multishell.lua"
+            sShell = advancedShellFile
         else
-            sShell = "rom/programs/shell.lua"
+            sShell = shellFile
         end
         os.run({}, sShell)
         os.run({}, "rom/programs/shutdown.lua")

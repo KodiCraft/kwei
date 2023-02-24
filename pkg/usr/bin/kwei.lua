@@ -79,6 +79,7 @@ local function usage()
   print("  passwd - set the admin password")
   print("  create <name> [image] - create a new container from an image")
   print("  shell <container> - open a shell in a container")
+  print("  run [pastebin] <script/id>")
   print("  addperm <container> <permission> - add a permission to a container")
   print("  rmperm <container> <permission> - remove a permission from a container")
   print("  listperms [container] - list permissions of a container or all possible permissions")
@@ -196,7 +197,7 @@ local function create(name, image)
   log:info("Container " .. name .. " created")
 end
 
-local function shellInContainer(name)
+local function shellInContainer(name, filename)
   if name == nil then
     printError("No container name specified")
     log:warn("No container name specified")
@@ -333,17 +334,6 @@ local function shellInContainer(name)
 
   -- create a new peripheral API that redirects peripherals according to the container's config
   local newperipheral = {}
-  function genContainerPeripheral(name)
-    -- check if the container has a peripheral matching the name
-    for _, peripheral in pairs(config.peripherals) do
-      if peripheral.container == name then
-        log:info("Redirecting peripheral " .. name .. " to " .. peripheral.native)
-        return peripheral.native
-      end
-    end
-    -- if we get here, the container does not have a peripheral matching the name
-    error("Access peripheral " .. name .. ", unauthorized")
-  end
 
   function newperipheral.getNames()
     local names = {}
@@ -405,7 +395,7 @@ local function shellInContainer(name)
   globals._G = globals
   globals._CC_CONTAINER_HOME = _CC_CONTAINER_HOME
   globals._PARENT_LOGGER = log
-  
+  globals._KWEI_RUN_FILE = filename
 
   local bioshandle = fs.open("/usr/lib/bios.lua", "r")
   if bioshandle == nil then
@@ -437,6 +427,62 @@ local function shellInContainer(name)
   printSuccess("Container " .. name .. " exited")
   log:info("Container " .. name .. " exited")
   return
+end
+
+local function runInContainer(name, arg1, arg2)
+  if name == nil then
+    printError("No container name specified")
+    log:warn("No container name specified")
+    return
+  end
+
+  if not fs.exists(HOME .. "/containers/" .. name) then
+    printError("Container " .. name .. " does not exist")
+    log:warn("Container " .. name .. " does not exist")
+    return
+  end
+
+  if arg2 == nil then
+    script = fs.combine("./", arg1)
+  else
+    if arg1 == nil then
+      printError("No script specified")
+      printError("Usage: run <container> [pastebin] <script/id>")
+      log:warn("No script specified")
+      return
+    elseif arg1 == pastebin then
+      -- download the script from pastebin
+      local handle = http.get("http://pastebin.com/raw.php?i=" .. arg2)
+      if handle == nil then
+        printError("Failed to download script from pastebin")
+        log:error("Failed to download script from pastebin")
+        return
+      end
+      local scriptText = handle.readAll()
+      handle.close()
+
+      -- write the script to a temporary file
+      if not fs.exists(HOME .. "/tmp") then
+        fs.makeDir(HOME .. "/tmp")
+      end
+      local handle = fs.open(HOME .. "/tmp/" .. name .. ".lua", "w")
+      if handle == nil then
+        printError("Failed to write script to temporary file")
+        log:error("Failed to write script to temporary file")
+        return
+      end
+
+      handle.write(scriptText)
+      handle.close()
+
+      script = HOME .. "/tmp/" .. name .. ".lua"
+    end
+
+    -- copy the script to the container at /startup.lua
+    fs.copy(script, HOME .. "/containers/" .. name .. "/startup.lua")
+
+    -- run the container
+    shellInContainer(name, "startup.lua")
 end
 
 local function list()
