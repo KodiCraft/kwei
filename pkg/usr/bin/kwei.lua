@@ -306,6 +306,9 @@ local function shellInContainer(name, filename)
     return unpack(paths)
   end
 
+
+  local overfs = {}
+
   -- Use some metatable magic to make the fs API redirect to the container's fs
   local fsmt = {
     __index = function(t, k)
@@ -317,17 +320,48 @@ local function shellInContainer(name, filename)
             return fs[k](genContainerPath(path), mode)
           end
         end
-        -- if we are calling 'complete' or 'combine' we need to maintain the input path
-        if k == "complete" or k == "combine" then
+
+        -- if we are calling 'combine', it needs to remain unmodified
+        if k == "combine" then
+          log:info("Returning unmodified fs.combine")
           return function(...)
-            return fs[k](...)
+            return fs.combine(...)
           end
         end
+
+        -- first check if overfs has a value for k, if it does, it means we are calling a function that has been overridden by the container
+        if overfs[k] then
+          return overfs[k]
+        end
+
         return function(...)
           return fs[k](genContainerPaths(...))
         end
       else
+        log:info("Accessing fs." .. k .. " from container")
         return fs[k]
+      end
+    end,
+
+    __newindex = function(t, k, v)
+      -- We allow setting values for the container's fs but do not override any of the fs API
+      log:info("Container is setting fs." .. k .. " to " .. tostring(v))
+      overfs[k] = v
+    end,
+
+    __pairs = function(t)
+      -- Present the keys of the native fs with the values of the container's fs
+      local keys = {}
+      for k, v in pairs(fs) do
+        table.insert(keys, k)
+      end
+
+      local i = 0
+      return function()
+        i = i + 1
+        if keys[i] then
+          return keys[i], t[keys[i]]
+        end
       end
     end
   }
