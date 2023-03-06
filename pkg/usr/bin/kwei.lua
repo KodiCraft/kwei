@@ -79,7 +79,7 @@ local function usage()
   print("  passwd - set the admin password")
   print("  create <name> [image] - create a new container from an image")
   print("  shell <container> - open a shell in a container")
-  print("  run [pastebin] <script/id>")
+  print("  run <container> [pastebin] <script/id>")
   print("  addperm <container> <permission> - add a permission to a container")
   print("  rmperm <container> <permission> - remove a permission from a container")
   print("  listperms [container] - list permissions of a container or all possible permissions")
@@ -512,10 +512,16 @@ local function runInContainer(name, arg1, arg2)
     end
 
     -- copy the script to the container at /startup.lua
-    fs.copy(script, HOME .. "/containers/" .. name .. "/startup.lua")
+    fs.copy(script, HOME .. "/containers/" .. name .. "/fs/startup")
 
     -- run the container
     shellInContainer(name, "startup.lua")
+
+    -- delete the temporary file
+    fs.delete(HOME .. "/tmp/" .. name .. ".lua")
+
+    -- delete the startup file
+    fs.delete(HOME .. "/containers/" .. name .. "/fs/startup")
 end
 
 local function list()
