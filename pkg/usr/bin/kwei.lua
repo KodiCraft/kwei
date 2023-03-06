@@ -85,7 +85,7 @@ local function usage()
   print("  listperms [container] - list permissions of a container or all possible permissions")
   print("  mount <container> <host_path> <container_path> - mount a path from the host filesystem into a container (container path is absolute)")
   print("  umount <container> <host_path> - unmount a path from the host filesystem")
-  print("  listmounts <container> - list all mounts of a container")
+  print("  lsmounts <container> - list all mounts of a container")
   print("  addperi <container> <peripheral> [innername] - add a peripheral to a container")
   print("  rmperi <container> <peripheral> - remove a peripheral from a container")
   print("  listperis <container> - list all peripherals of a container")
@@ -1026,6 +1026,7 @@ local cmds = {
     {name = "delete", func = delete},
     {name = "mount", func = mount},
     {name = "unmount", func = unmount},
+    {name = "lsmounts", func = listmounts},
     {name = "addperm", func = addPermission},
     {name = "listperms", func = listPermissions},
     {name = "rmperm", func = removePermission},
