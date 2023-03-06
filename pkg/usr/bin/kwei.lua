@@ -217,8 +217,6 @@ local function shellInContainer(name, filename)
   local config = textutils.unserialize(confighandle.readAll())
   confighandle.close()
 
-  -- TODO: Handle configuration and permissions
-
   -- create the container's required global:
   _CC_CONTAINER_HOME = HOME .. "/containers/" .. name .. "/fs"
   log:info("Container home set to " .. _CC_CONTAINER_HOME)
@@ -321,7 +319,9 @@ local function shellInContainer(name, filename)
         end
         -- if we are calling 'complete' or 'combine' we need to maintain the input path
         if k == "complete" or k == "combine" then
-          return fs[k]
+          return function(...)
+            return fs[k](...)
+          end
         end
         return function(...)
           return fs[k](genContainerPaths(...))
