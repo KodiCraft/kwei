@@ -449,8 +449,7 @@ local function runInContainer(name, arg1, arg2)
       printError("Usage: run <container> [pastebin] <script/id>")
       log:warn("No script specified")
       return
-  end
-    elseif arg1 == pastebin then
+  elseif arg1 == "pastebin" then
       -- download the script from pastebin
       local handle = http.get("http://pastebin.com/raw.php?i=" .. arg2)
       if handle == nil then
@@ -993,6 +992,7 @@ local cmds = {
     {name = "addperi", func = addPeripheral},
     {name = "listperis", func = listPeripherals},
     {name = "rmperi", func = rmPeripheral},
+    {name = "run", func = runInContainer},
 }
 
 if #args == 0 then
